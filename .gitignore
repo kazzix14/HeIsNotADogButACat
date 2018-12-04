@@ -1,0 +1,15 @@
+
+/*
+
+!.gitignore
+!Makefile
+!*.c
+!*/
+
+
+
+/*/*
+
+!/*/.gitignore
+!/*/Makefile
+!/*/*.c
