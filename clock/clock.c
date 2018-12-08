@@ -1,3 +1,5 @@
+#define GLUT_DISABLE_ATEXIT_HACK
+
 #include <GL/glut.h>
 #include <stdio.h>
 #include <time.h>
@@ -7,10 +9,11 @@ void Display(void);
 void Reshape(int w, int h);
 void Timer(int value);
 void getWindowSize(int *x, int *y);
+void init(int argc,char **argv, GLuint width, GLuint height, char *title);
 
 int main(int argc, char **argv)
 {
-	
+	init(argc, argv, 480, 480, "hello");
 	glutTimerFunc(500, Timer, 0);
 	glutMainLoop();
 
@@ -64,7 +67,7 @@ void getWindowSize(int *x, int *y)
 	*y = glutGet(GLUT_WINDOW_HEIGHT);
 }
 
-void init(char &argv,int argv, GLuint width, GLuint height, char *title)
+void init(int argc, char **argv, GLuint width, GLuint height, char *title)
 {
 	glutInit(&argc, argv);
 	glutInitWindowSize(width, height);
