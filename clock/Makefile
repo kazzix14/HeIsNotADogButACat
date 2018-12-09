@@ -17,7 +17,7 @@ CFLAGS  = -Wall        \
 LDFLAGS = $(addprefix -l, $(LIBS))
 
 DEBUG_FLAGS   = -g -O0
-RELEASE_FLAGS = -S -O2
+RELEASE_FLAGS = -O2
 
 .PHONY: all debug release clean
 

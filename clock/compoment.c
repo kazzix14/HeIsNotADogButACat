@@ -22,3 +22,8 @@ void Compoment_deconstruct(Compoment* const p_this)
 {
 	free(p_this->p_vars);
 }
+
+void Compoment_get_position(Compoment* const p_this, GLuint* p_rtrn)
+{
+	p_rtrn = p_this->p_vars->position;
+}
