@@ -1,10 +1,36 @@
-all: clock.exe
+CC 	 = gcc
 
-clock.exe: clock.o
-	gcc -Wall -I/usr/include/opengl -o clock.exe clock.o -lglpng -lglut32 -lglu32 -lopengl32 -lm
+PROGRAM  = clock.exe
+INCDIR   = /usr/include/opengl
 
-clock.o: clock.c
-	gcc  -Wall -I/usr/include/opengl -c clock.c  -lglpng -lglut32 -lglu32 -lopengl32 -lm
+SRCS = *.c
+OBJS = $(SRCS:%.c=%.o)
+LIBS = glpng 	  \
+       glut32     \
+       glu32	  \
+       opengl32   \
+       m
 
+CFLAGS  = -Wall        \
+	  -I$(INCDIR)  \
+
+LDFLAGS = $(addprefix -l, $(LIBS))
+
+DEBUG_FLAGS   = -g -O0
+RELEASE_FLAGS = -S -O2
+
+.PHONY: all debug release clean
+
+debug  : CFLAGS   += $(DEBUG_FLAGS)
+debug  : all
+
+release: CFLAGS   += $(RELEASE_FLAGS)
+release: all
+
+all    : $(PROGRAM)
+$(PROGRAM): $(OBJS)
+	$(CC) -o $@ $^ $(LDFLAGS)
+.c.o:
+	$(CC) -c $^ $(CFLAGS)
 clean:
-	rm clock.o clock.exe
+	-rm -f $(OBJS) $(PROGRAM)

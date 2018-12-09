@@ -1,33 +1,42 @@
 #define GLUT_DISABLE_ATEXIT_HACK
 
 #include <GL/glut.h>
+#include <GL/glpng.h>
 #include <stdio.h>
 #include <time.h>
 #include <math.h>
 
-void Display(void);
-void Reshape(int w, int h);
-void Timer(int value);
+#include "compoment.h"
+#include "image.h"
+
+void display(void);
+void reshape(int w, int h);
+void timer(int value);
 void getWindowSize(int *x, int *y);
-void init(int argc,char **argv, GLuint width, GLuint height, char *title);
+void init(int *argc, char **argv, GLuint width, GLuint height, char *title);
 
 int main(int argc, char **argv)
 {
-	init(argc, argv, 480, 480, "hello");
-	glutTimerFunc(500, Timer, 0);
+	Compoment a;
+	Compoment_construct(&a, 10, 100);
+	Image img;
+	Image_construct(&img, "", 0, 0);
+	init(&argc, argv, 480, 480, "hello");
+
+	glutTimerFunc(500, timer, 0);
 	glutMainLoop();
 
 	return(0);
 
 }
 
-void Display(void)
+void display(void)
 {
 	time_t tt;
 	time(&tt);
 	struct tm *tms;
 	tms = localtime(&tt);
-	
+
   	printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
   	printf("%d:%d:%d\n", tms->tm_hour, tms->tm_min, tms->tm_sec);
 
@@ -45,13 +54,13 @@ void Display(void)
 	glutSwapBuffers();
 }
 
-void Timer(int value)
+void timer(int value)
 {
-	glutTimerFunc(500, Timer, 0);
+	glutTimerFunc(500, timer, 0);
 	glutPostRedisplay();
 }
 
-void Reshape(int w, int h)
+void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_MODELVIEW);
@@ -67,13 +76,13 @@ void getWindowSize(int *x, int *y)
 	*y = glutGet(GLUT_WINDOW_HEIGHT);
 }
 
-void init(int argc, char **argv, GLuint width, GLuint height, char *title)
+void init(int *argc, char **argv, GLuint width, GLuint height, char *title)
 {
-	glutInit(&argc, argv);
+	glutInit(argc, argv);
 	glutInitWindowSize(width, height);
 	glutCreateWindow(title);
 
-	glutDisplayFunc(Display);
-	glutReshapeFunc(Reshape);
+	glutDisplayFunc(display);
+	glutReshapeFunc(reshape);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 }
