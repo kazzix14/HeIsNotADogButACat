@@ -2,7 +2,7 @@
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
-#include "compoment.h"
+#include "component.h"
 #include "image.h"
 
 struct private_varibles
@@ -14,7 +14,7 @@ struct private_varibles
 void Image_construct(Image* const p_this, char* const image_path, GLuint const pos_x, GLuint const pos_y)
 {
 
-	_construct(&(p_this->parent), pos_x, pos_y);
+	Component_construct(&(p_this->parent), pos_x, pos_y);
 
 	// allocate memory for private varibles
 	struct private_varibles* p;
@@ -37,7 +37,7 @@ void Image_put(Image* const p_this)
 	GLuint w = p_this->p_vars->info.Width;
 	GLuint h = p_this->p_vars->info.Height;
 
-	_get_position(&(p_this->parent), pos);
+	Component_get_position(&(p_this->parent), pos);
 
 	glPushMatrix();
 	glEnable(GL_TEXTURE_2D);

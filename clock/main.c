@@ -6,7 +6,7 @@
 #include <time.h>
 #include <math.h>
 
-#include "compoment.h"
+#include "component.h"
 #include "image.h"
 
 void display(void);
@@ -17,6 +17,13 @@ void init(int *argc, char **argv, GLuint width, GLuint height, char *title);
 
 Image img;
 pngInfo info1;
+
+double vertices[][3]={
+	{0.0, 0.5, 0.0},
+	{0.0, 0.0, 0.0},
+	{0.5, 0.0, 0.0},
+	{0.5, 0.5, 0.0}
+};
 
 int main(int argc, char **argv)
 {

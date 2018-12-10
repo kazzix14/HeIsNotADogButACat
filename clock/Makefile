@@ -3,7 +3,7 @@ CC 	 = gcc
 PROGRAM  = clock.exe
 INCDIR   = /usr/include/opengl
 
-SRCS = main.c image.c compoment.c
+SRCS = main.c image.c component.c
 OBJS = $(SRCS:%.c=%.o)
 LIBS = glpng 	  \
        glut32     \
@@ -35,5 +35,6 @@ $(PROGRAM): $(OBJS)
 	$(CC) -c $^ $(CFLAGS)
 clean:
 	-rm -f $(OBJS) $(PROGRAM)
-
--include *.d
+component.o: component.c component.h
+image.o: image.c component.h image.h
+main.o: main.c component.h image.h

@@ -3,12 +3,12 @@
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
-#include "compoment.h"
+#include "component.h"
 
 struct private_varibles;
 typedef struct image
 {
-	Compoment parent;	
+	Component parent;	
 	struct private_varibles* p_vars;	
 } Image;
 
