@@ -2,8 +2,10 @@
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
-#include "component.h"
-#include "image.h"
+
+#include "component2d.h"
+#include "image2d.h"
+#include "vector2d.h"
 
 struct private_varibles
 {
@@ -11,7 +13,7 @@ struct private_varibles
 	pngInfo info;
 };
 
-void Image_construct(Image* const p_this, char* const image_path, GLuint const pos_x, GLuint const pos_y)
+void Image2D_construct(Image2D* const p_this, char* const image_path)
 {
 
 	Component_construct(&(p_this->parent), pos_x, pos_y);
@@ -22,7 +24,7 @@ void Image_construct(Image* const p_this, char* const image_path, GLuint const p
 	p_this->p_vars = p;
 	
 	// load image
-	p_this->p_vars->img = pngBind(image_path, 
+	p_this->p_vars->img = pngBind(image2d_path, 
 					PNG_NOMIPMAP,
 					PNG_ALPHA,
 					&(p_this->p_vars->info),
@@ -31,13 +33,13 @@ void Image_construct(Image* const p_this, char* const image_path, GLuint const p
 					GL_NEAREST);
 }
 
-void Image_put(Image* const p_this)
+void Image2D_put(Image2D* const p_this)
 {
-	GLuint pos[2];
-	GLuint w = p_this->p_vars->info.Width;
-	GLuint h = p_this->p_vars->info.Height;
+	Vector2D pos;
+	int w = p_this->p_vars->info.Width;
+	int h = p_this->p_vars->info.Height;
 
-	Component_get_position(&(p_this->parent), pos);
+	Component_get_position(&(p_this->parent), &pos);
 
 	glPushMatrix();
 	glEnable(GL_TEXTURE_2D);
@@ -64,17 +66,17 @@ void Image_put(Image* const p_this)
 	glPopMatrix();
 }
 
-void Image_get_info(Image* const p_this, pngInfo* const p_info)
+void Image2D_get_info(Image2D* const p_this, pngInfo* const p_info)
 {
 	*p_info = p_this->p_vars->info;
 }
 
-void Image_get_id(Image* const p_this, GLuint* const p_rtrn)
+void Image2D_get_id(Image2D* const p_this, GLuint* const p_rtrn)
 {
 	*p_rtrn = p_this->p_vars->img;
 }
 
-void Image_get_size(Image* const p_this, GLuint p_rtrn[2]){
+void Image2D_get_size(Image2D* const p_this, Vector2D* const p_rtrn){
 	p_rtrn[0] = p_this->p_vars->info.Width;
 	p_rtrn[1] = p_this->p_vars->info.Height;
 }
