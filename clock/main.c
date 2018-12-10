@@ -19,10 +19,10 @@ Image img;
 pngInfo info1;
 
 double vertices[][3]={
-	{0.0, 0.5, 0.0},
-	{0.0, 0.0, 0.0},
-	{0.5, 0.0, 0.0},
-	{0.5, 0.5, 0.0}
+	{0.0, 10.0, 0.0},
+	{0.0, 20.0, 50.0},
+	{50.0, 50.0, 0.0},
+	{50.0, 0.0, 0.0}
 };
 
 int main(int argc, char **argv)
@@ -59,7 +59,13 @@ void display(void)
 	glEnd();
 	
 	Image_put(&img);
-	
+
+	glColor3f(0.0, 1.0, 0.0);
+	glBegin(GL_POLYGON);
+	for(int i=0; i < 4; i++)
+		glVertex3dv(vertices[i]);
+	glEnd();
+
 	glFlush();
 	glutSwapBuffers();
 }
@@ -75,7 +81,7 @@ void reshape(int w, int h)
 	glViewport(0, 0, w, h);
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
-	gluOrtho2D(0, w, 0, h);
+	glOrtho(0, w, 0, h, 1.0, -1.0);
 	glScaled(1, -1, 1);
 	glTranslated(0, -h, 0);
 }
