@@ -25,7 +25,7 @@ int main(int argc, char **argv)
     glutInit(&argc, argv);
     glutInitWindowSize(180, 180);
     glutCreateWindow("PNGファイル読み込みのテスト");
-    glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA);
+    glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE | GLUT_ALPHA);
     glClearColor(0.0, 0.0, 1.0, 1.0);
 
     //  テクスチャのアルファチャネルを有効にする設定

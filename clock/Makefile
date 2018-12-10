@@ -3,7 +3,7 @@ CC 	 = gcc
 PROGRAM  = clock.exe
 INCDIR   = /usr/include/opengl
 
-SRCS = *.c
+SRCS = main.c image.c compoment.c
 OBJS = $(SRCS:%.c=%.o)
 LIBS = glpng 	  \
        glut32     \
@@ -13,13 +13,14 @@ LIBS = glpng 	  \
 
 CFLAGS  = -Wall        \
 	  -I$(INCDIR)  \
+	  -MD
 
 LDFLAGS = $(addprefix -l, $(LIBS))
 
 DEBUG_FLAGS   = -g -O0
 RELEASE_FLAGS = -O2
 
-.PHONY: all debug release clean
+.PHONY: all debug release conf clean
 
 debug  : CFLAGS   += $(DEBUG_FLAGS)
 debug  : all
@@ -34,3 +35,5 @@ $(PROGRAM): $(OBJS)
 	$(CC) -c $^ $(CFLAGS)
 clean:
 	-rm -f $(OBJS) $(PROGRAM)
+
+-include *.d

@@ -22,9 +22,7 @@ int main(int argc, char **argv)
 {
 	init(&argc, argv, 480, 480, "hello");
 
-	Image_construct(&img, "atest.png", 0, 0);
-	Image_get_info(&img, &info1);
-   	printf("img1: W=%d, H=%d, D=%d, A=%d\n",info1.Width, info1.Height, info1.Depth, info1.Alpha);
+	Image_construct(&img, "image.png", 0, 0);
 
 	glutTimerFunc(500, timer, 0);
 	glutMainLoop();
@@ -52,9 +50,8 @@ void display(void)
 	glVertex2f(ww/2, wh/2);
 	glVertex2f(ww/2 + 70*sin((float)tms->tm_sec/30.0*M_PI), wh/2 - 70*cos((float)tms->tm_sec/30.0*M_PI));
 	glEnd();
+	
 	Image_put(&img);
-	Image_get_info(&img, &info1);
-   	//printf("img1: W=%d, H=%d, D=%d, A=%d\n",info1.Width, info1.Height, info1.Depth, info1.Alpha);
 	
 	glFlush();
 	glutSwapBuffers();
@@ -87,7 +84,7 @@ void init(int *argc, char **argv, GLuint width, GLuint height, char *title)
 	glutInit(argc, argv);
 	glutInitWindowSize(width, height);
 	glutCreateWindow(title);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA);
+	glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA | GLUT_DOUBLE);
 	glClearColor(0.0, 0.0, 1.0, 1.0);
 
 	glEnable(GL_BLEND);
@@ -96,5 +93,4 @@ void init(int *argc, char **argv, GLuint width, GLuint height, char *title)
 
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
-	glutInitDisplayMode(GLUT_RGBA | GLUT_DOUBLE);
 }
