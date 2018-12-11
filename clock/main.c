@@ -6,8 +6,10 @@
 #include <time.h>
 #include <math.h>
 
-#include "component.h"
-#include "image.h"
+#include "component2d.h"
+#include "image2d.h"
+#include "vector2d.h"
+#include "view.h"
 
 void display(void);
 void reshape(int w, int h);
@@ -15,7 +17,7 @@ void timer(int value);
 void getWindowSize(int *x, int *y);
 void init(int *argc, char **argv, GLuint width, GLuint height, char *title);
 
-Image img;
+Image2D img;
 pngInfo info1;
 
 double vertices[][3]={
@@ -27,9 +29,13 @@ double vertices[][3]={
 
 int main(int argc, char **argv)
 {
-	init(&argc, argv, 480, 480, "hello");
+	init(&argc, argv, 900, 600, "hello");
 
-	Image_construct(&img, "image.png", 0, 0);
+	Image2D_construct(&img, "image.png");
+	Vector2D impos;
+	Vector2D_construct(&impos);
+	Vector2D_set(&impos, 20, 20);
+	Component2D_set_position(&(img.parent), &impos);
 
 	glutTimerFunc(500, timer, 0);
 	glutMainLoop();
@@ -44,23 +50,21 @@ void display(void)
 	time(&tt);
 	struct tm *tms;
 	tms = localtime(&tt);
-
+	View view;
+	View_construct(&view);
   	//printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
   	//printf("%d:%d:%d\n", tms->tm_hour, tms->tm_min, tms->tm_sec);
 
 	int ww, wh;
 	getWindowSize(&ww, &wh);
 
-	glMatrixMode(GL_MODELVIEW);
-	glLoadIdentity();
-	gluLookAt(0.0, 0.0, 1000.0,
-		  0.0, 0.0, 0.0,
-		  0.0, 1.0, 0.0);
 
 	glClear(GL_COLOR_BUFFER_BIT);
+	View_begin_2d(&view, ww, wh);
+	Image2D_put(&img);
+	View_end();	
+	View_begin_3d(&view, ww, wh);
 
-	Image_put(&img);
-	
 	glPushMatrix();	
 	//glTranslated(100, 0, 0);
 	//glRotated(tms->tm_sec*M_PI, 0.0, 0.0, 1.0);
@@ -76,6 +80,8 @@ void display(void)
 	glVertex2f(ww/2 + 70*sin((float)tms->tm_sec/30.0*M_PI), wh/2 - 70*cos((float)tms->tm_sec/30.0*M_PI));
 	glEnd();
 
+	View_end();
+	
 	glFlush();
 	glutSwapBuffers();
 }
@@ -89,15 +95,6 @@ void timer(int value)
 void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
-
-	glMatrixMode(GL_PROJECTION);
-	glLoadIdentity();
-	//glOrtho(0, w, 0, h, 1.0, -1.0);
-	gluPerspective(30.0, (double)w / (double)h, 1.0, 10000.0);
-
-	glScaled(1, -1, 1);
-	glTranslated(0, -h, 0.0);
-	
 }
 
 void getWindowSize(int *x, int *y)
@@ -114,7 +111,8 @@ void init(int *argc, char **argv, GLuint width, GLuint height, char *title)
 	glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA | GLUT_DOUBLE | GLUT_DEPTH);
 	glClearColor(0.0, 0.0, 1.0, 1.0);
 
-	glEnable(GL_BLEND | GL_DEPTH_TEST);
+	//glEnable(GL_BLEND | GL_DEPTH_TEST);
+	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 

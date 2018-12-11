@@ -16,7 +16,7 @@ void Vector2D_construct(Vector2D* const p_this)
 	p_this->p_vars = p;
 }
 
-void Vector2D_deconstruct(Vector2D* const p_this)
+void Vector2D_release(Vector2D* const p_this)
 {
 	free(p_this->p_vars);
 }
@@ -31,10 +31,10 @@ void Vector2D_get_y(Vector2D* const p_this, int* const p_rtrn)
 	*p_rtrn = p_this->p_vars->pos[1];
 }
 
-void Vector2D_get(Vector2D* const p_this, int p_rtrn[2])
+void Vector2D_get(Vector2D* const p_this, int pos[2])
 {
-	p_rtrn[0] = p_this->p_vars->pos[0];
-	p_rtrn[1] = p_this->p_vars->pos[1];
+	pos[0] = p_this->p_vars->pos[0];
+	pos[1] = p_this->p_vars->pos[1];
 }
 
 void Vector2D_set_x(Vector2D* const p_this, int const pos_x)
@@ -47,10 +47,10 @@ void Vector2D_set_y(Vector2D* const p_this, int const pos_y)
 	p_this->p_vars->pos[1] = pos_y;
 }
 
-void Vector2D_set(Vector2D* const p_this, int const pos[2])
+void Vector2D_set(Vector2D* const p_this, int const pos_x, int const pos_y)
 {
-	p_this->p_vars->pos[0] = pos[0];
-	p_this->p_vars->pos[1] = pos[1];
+	p_this->p_vars->pos[0] = pos_x;
+	p_this->p_vars->pos[1] = pos_y;
 }
 
 void Vector2D_equal(Vector2D* const p_this, Vector2D* const p_pos)

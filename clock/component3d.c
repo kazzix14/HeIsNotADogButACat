@@ -1,7 +1,7 @@
 #define GLUT_DISABLE_ATEXIT_HACK
 
 #include <GL/gl.h>
-#include "component.h"
+#include "component3d.h"
 
 struct private_varibles
 {
@@ -10,7 +10,7 @@ struct private_varibles
 	GLuint scale[3];
 };
 
-void Component3D_construct(Component* const p_this)
+void Component3D_construct(Component3D* const p_this)
 {
 	// allocate memory for private varibles
 	struct private_varibles* p;

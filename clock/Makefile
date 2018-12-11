@@ -3,7 +3,7 @@ CC 	 = gcc
 PROGRAM  = clock.exe
 INCDIR   = /usr/include/opengl
 
-SRCS = main.c image.c component.c
+SRCS = *.c
 OBJS = $(SRCS:%.c=%.o)
 LIBS = glpng 	  \
        glut32     \
@@ -13,7 +13,6 @@ LIBS = glpng 	  \
 
 CFLAGS  = -Wall        \
 	  -I$(INCDIR)  \
-	  -MD
 
 LDFLAGS = $(addprefix -l, $(LIBS))
 
@@ -31,10 +30,15 @@ release: all
 all    : $(PROGRAM)
 $(PROGRAM): $(OBJS)
 	$(CC) -o $@ $^ $(LDFLAGS)
+
 .c.o:
 	$(CC) -c $^ $(CFLAGS)
 clean:
 	-rm -f $(OBJS) $(PROGRAM)
-component.o: component.c component.h
-image.o: image.c component.h image.h
-main.o: main.c component.h image.h
+
+component2d.o: component2d.c component2d.h vector2d.h
+component3d.o: component3d.c component3d.h
+image2d.o: image2d.c component2d.h vector2d.h image2d.h
+main.o: main.c component2d.h vector2d.h image2d.h view.h
+vector2d.o: vector2d.c vector2d.h
+view.o: view.c view.h
