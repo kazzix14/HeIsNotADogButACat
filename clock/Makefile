@@ -2,15 +2,10 @@ CC 	   = gcc
 LD	   = gcc
 
 TARGET     = clock.exe
-INCDIR     = /usr/include/opengl
-SRCDIR     = ./src
-HEADERDIR  = ./include
-OBJDIR	   = ./build
+SRCS       = $(wildcard *.c)
+OBJS       = $(SRCS:%.c=%.o)
 
-SRCS       = $(SRCDIR)/*.c
-HEADERS    = $(HEADERDIR)/*.h
-OBJS       = $(OBJDIR)/$(SRCS:%.c=%.o)
-DEPENDS    = $(OBJS:.o=.d)
+INCDIR     = /usr/include/opengl
 LIBS 	   = glpng 	  \
        	     glut32       \
        	     glu32	  \
@@ -19,6 +14,7 @@ LIBS 	   = glpng 	  \
 
 CCFLAGS    = -Wall        \
 	     -I$(INCDIR)  \
+
 LDFLAGS    = $(addprefix -l, $(LIBS))
 
 DEBUG_FLAGS   = -g -O0
@@ -34,13 +30,19 @@ release: all
 
 all    : $(TARGET)
 $(TARGET): $(OBJS)
-	$(CC) -o $@ $^ $(LDFLAGS)
+	$(LD) -o $@ $^ $(LDFLAGS)
+
 .c.o:
 	$(CC) -c $^ $(CCFLAGS)
 
-$(OBJS) : $(HEADERS) Makefile
-
 clean:
-	-rm -f $(OBJS) $(TARGET) $(DEPENDS)
+	-rm -f $(OBJS) $(TARGET)
 
--include $(DEPENDS)
+image2d.o: image2d.c transform2d.h vector2d.h vector3d.h image2d.h view.h
+main.o: main.c transform2d.h vector2d.h vector3d.h image2d.h view.h
+transform2d.o: transform2d.c transform2d.h vector2d.h vector3d.h
+transform3d.o: transform3d.c transform3d.h vector3d.h vector4d.h
+vector2d.o: vector2d.c vector2d.h
+vector3d.o: vector3d.c vector3d.h
+vector4d.o: vector4d.c vector4d.h
+view.o: view.c view.h vector3d.h
