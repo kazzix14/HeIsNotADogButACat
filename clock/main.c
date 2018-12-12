@@ -55,7 +55,7 @@ void display(void)
 	View_begin_2d(p_view);
 	Image2D_put(p_img, p_view);
 	View_end();	
-	View_begin_3d(p_view);
+	View_begin_2d(p_view);
 
 	glBegin(GL_LINES);
 	glVertex2f(ww/2, wh/2);
