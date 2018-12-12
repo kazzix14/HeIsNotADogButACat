@@ -19,17 +19,16 @@ void init(int *argc, char **argv, GLuint width, GLuint height, char *title);
 
 Image2D* p_img;
 pngInfo info1;
-View view;
+View* p_view;
 
 int main(int argc, char **argv)
 {
 	init(&argc, argv, 900, 600, "hello");
+	p_view = View_new();
 
 	p_img = Image2D_new();
 	Image2D_load(p_img, "resource/test.png");
-	Vector2D_set_zero(&(p_img->p_transform->position));
-	Vector2D_set_zero(&(p_img->p_transform->position));
-	Vector2D_set_identity(&(p_img->p_transform->position));
+	Transform2D_set_default(p_img->p_transform);
 
 	glutTimerFunc(500, timer, 0);
 	glutMainLoop();
@@ -51,26 +50,12 @@ void display(void)
 	int ww, wh;
 	getWindowSize(&ww, &wh);
 
-	View* p_view = View_new();
-	p_view->screen_width = ww;
-	p_view->screen_height = wh;
-
 
 	glClear(GL_COLOR_BUFFER_BIT);
 	View_begin_2d(p_view);
 	Image2D_put(p_img, p_view);
 	View_end();	
 	View_begin_3d(p_view);
-
-	//glPushMatrix();	
-	////glTranslated(100, 0, 0);
-	////glRotated(tms->tm_sec*M_PI, 0.0, 0.0, 1.0);
-	//glColor3f(0.0, 1.0, 0.0);
-	//glBegin(GL_POLYGON);
-	//for(int i=0; i < 4; i++)
-	//	glVertex3dv(vertices[i]);
-	//glEnd();
-	//glPopMatrix();
 
 	glBegin(GL_LINES);
 	glVertex2f(ww/2, wh/2);
@@ -92,6 +77,8 @@ void timer(int value)
 void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
+	p_view->screen_width = w;
+	p_view->screen_height = h;
 }
 
 void getWindowSize(int *x, int *y)

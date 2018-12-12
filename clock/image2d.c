@@ -53,9 +53,9 @@ void Image2D_put(const Image2D* p_this, const View* view)
 	View_begin_2d(view);
 
 	Transform2D* t = p_this->p_transform;
-	//glTranslatef(t->position.x, t->position.y, 0);
-	//glRotatef(t->rotation.z, t->rotation.x, t->rotation.y, 0);
-	//glScalef(t->scale.x, t->scale.y);
+	glTranslatef(t->position.x, t->position.y, 0);
+	glRotatef(t->rotation.z, t->rotation.x, t->rotation.y, 0);
+	glScalef(t->scale.x, t->scale.y, 1);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, p_this->p_vars->img);
