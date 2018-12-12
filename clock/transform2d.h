@@ -12,7 +12,7 @@ typedef struct transform2d
 } Transform2D;
 
 Transform2D* Transform2D_new();
-void Transform2D(Transform2D* const);
+void Transform2D_release(Transform2D* const);
 void Transform2D_set(Transform2D* const, const Transform2D*);
 void Transform2D_set_default(Transform2D* const);
 

@@ -16,7 +16,7 @@ View* View_new()
 	v = (View*)malloc(sizeof(View));
 	v->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
 	
-	if(v.p_vars == NULL)
+	if(v->p_vars == NULL)
 		return NULL;
 
 	return v;
@@ -28,12 +28,12 @@ void View_release(View* const p_this)
 	free(p_this);
 }
 
-void View_begin_2d(View* const p_this, int w, int h)
+void View_begin_2d(const View* p_this)
 {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	gluOrtho2D(0, w, h, 0);
+	gluOrtho2D(0, p_this->screen_width, p_this->screen_height, 0);
 
 	//glScaled(1, -1, 1);
 	//glTranslated(0, -h, 0.0);
@@ -43,15 +43,15 @@ void View_begin_2d(View* const p_this, int w, int h)
 	glLoadIdentity();
 }
 
-void View_begin_3d(View* const p_this, int w, int h)
+void View_begin_3d(const View* p_this)
 {
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	gluPerspective(30.0, (double)w / (double)h, 1.0, 10000.0);
+	gluPerspective(30.0, (double)p_this->screen_width / (double)p_this->screen_height, 1.0, 10000.0);
 
 	glScaled(1, -1, 1);
-	glTranslated(0, -h, 0.0);
+	glTranslated(0, -p_this->screen_height, 0.0);
 
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();

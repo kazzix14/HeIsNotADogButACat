@@ -15,7 +15,6 @@ Transform2D* Transform2D_new()
 
 void Transform2D_release(Transform2D* const p_this)
 {
-	free(&(p_this->p_vars));
 	free(p_this);
 }
 

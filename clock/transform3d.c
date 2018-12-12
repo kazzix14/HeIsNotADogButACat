@@ -15,15 +15,14 @@ Transform3D* Transform3D_new()
 
 void Transform3D_release(Transform3D* const p_this)
 {
-	free(&(p_this->p_vars));	
 	free(p_this);
 }
 
 void Transform3D_set(Transform3D* const p_this, const Transform3D* p_oprnd)
 {
 	Vector3D_set(&(p_this->position), &(p_oprnd->position));
-	Vector3D_set(&(p_this->rotation), &(p_oprnd->rotation));
 	Vector3D_set(&(p_this->scale), &(p_oprnd->scale));
+	Vector4D_set(&(p_this->rotation), &(p_oprnd->rotation));
 }
 
 void Transform3D_set_default(Transform3D* const p_this)

@@ -44,29 +44,33 @@ void display(void)
 	time(&tt);
 	struct tm *tms;
 	tms = localtime(&tt);
-	View* p_view = View_new();
-  	//printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
+  	
+	//printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
   	//printf("%d:%d:%d\n", tms->tm_hour, tms->tm_min, tms->tm_sec);
 
 	int ww, wh;
 	getWindowSize(&ww, &wh);
 
+	View* p_view = View_new();
+	p_view->screen_width = ww;
+	p_view->screen_height = wh;
+
 
 	glClear(GL_COLOR_BUFFER_BIT);
-	View_begin_2d(p_view, ww, wh);
-	Image2D_put(p_img);
+	View_begin_2d(p_view);
+	Image2D_put(p_img, p_view);
 	View_end();	
-	View_begin_3d(p_view, ww, wh);
+	View_begin_3d(p_view);
 
-	glPushMatrix();	
-	//glTranslated(100, 0, 0);
-	//glRotated(tms->tm_sec*M_PI, 0.0, 0.0, 1.0);
-	glColor3f(0.0, 1.0, 0.0);
-	glBegin(GL_POLYGON);
-	for(int i=0; i < 4; i++)
-		glVertex3dv(vertices[i]);
-	glEnd();
-	glPopMatrix();
+	//glPushMatrix();	
+	////glTranslated(100, 0, 0);
+	////glRotated(tms->tm_sec*M_PI, 0.0, 0.0, 1.0);
+	//glColor3f(0.0, 1.0, 0.0);
+	//glBegin(GL_POLYGON);
+	//for(int i=0; i < 4; i++)
+	//	glVertex3dv(vertices[i]);
+	//glEnd();
+	//glPopMatrix();
 
 	glBegin(GL_LINES);
 	glVertex2f(ww/2, wh/2);
