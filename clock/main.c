@@ -77,8 +77,8 @@ void timer(int value)
 void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
-	p_view->screen_width = w;
-	p_view->screen_height = h;
+	p_view->screen_width = w/2;
+	p_view->screen_height = h/2;
 }
 
 void getWindowSize(int *x, int *y)
