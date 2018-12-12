@@ -35,10 +35,11 @@ $(PROGRAM): $(OBJS)
 	$(CC) -c $^ $(CFLAGS)
 clean:
 	-rm -f $(OBJS) $(PROGRAM)
-
-component2d.o: component2d.c component2d.h vector2d.h
-component3d.o: component3d.c component3d.h
-image2d.o: image2d.c component2d.h vector2d.h image2d.h
-main.o: main.c component2d.h vector2d.h image2d.h view.h
+image2d.o: image2d.c transform2d.h vector2d.h vector3d.h image2d.h view.h
+main.o: main.c transform2d.h vector2d.h vector3d.h image2d.h view.h
+transform2d.o: transform2d.c transform2d.h vector2d.h vector3d.h
+transform3d.o: transform3d.c transform3d.h vector3d.h vector4d.h
 vector2d.o: vector2d.c vector2d.h
-view.o: view.c view.h
+vector3d.o: vector3d.c vector3d.h
+vector4d.o: vector4d.c vector4d.h
+view.o: view.c view.h vector3d.h

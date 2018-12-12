@@ -3,28 +3,40 @@
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
-#include "component2d.h"
+#include "transform2d.h"
 #include "image2d.h"
 #include "vector2d.h"
+#include "view.h"
 
-struct private_varibles
+struct private_variables
 {
 	GLuint img;
 	pngInfo info;
 };
 
-Image* Image2D_construct(Image2D* const p_this)
+Image2D* Image2D_new()
 {
+	// allocate memories
+	Image2D* p_img;
+	p_img = (Image2D*)malloc(sizeof(Image2D));
+	p_img->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
+	p_img->p_transform = Transform2D_new();
 
-	Component2D_construct(&(p_this->parent));
+	if(p_img == NULL || p_img->p_vars == NULL || p_img->p_transform == NULL)
+		return NULL;
 
-	// allocate memory for private varibles
-	return (struct private_varibles*)malloc(sizeof(struct private_varibles));
+	return p_img;
 }
 
-void Image2D_load_image(const char* path)
+void Image2D_release(Image2D* const p_this)
 {
-	p_this->p_vars->img = pngBind(image_path, 
+	free(p_this->p_vars);
+	free(p_this);
+}
+
+void Image2D_load(Image2D* const p_this, const char* path)
+{
+	p_this->p_vars->img = pngBind(path, 
 					PNG_NOMIPMAP,
 					PNG_ALPHA,
 					&(p_this->p_vars->info),
@@ -32,18 +44,19 @@ void Image2D_load_image(const char* path)
 					GL_NEAREST,
 					GL_NEAREST);
 }
-void Image2D_put(Image2D* const p_this)
+
+void Image2D_put(const Image2D* p_this, const View* view)
 {
 	int w = p_this->p_vars->info.Width,
-	    h = p_this->p_vars->info.Height,
-	    x = p_this->,
-	    y;
+	    h = p_this->p_vars->info.Height;
 
-	Vector2D_get_x(&pos, &x),
-        Vector2D_get_y(&pos, &y);
+	View_begin_2d(view);
 
-	Vector2D_release(&pos);
-	
+	Transform2D* t = p_this->p_transform;
+	//glTranslatef(t->position.x, t->position.y, 0);
+	//glRotatef(t->rotation.z, t->rotation.x, t->rotation.y, 0);
+	//glScalef(t->scale.x, t->scale.y);
+
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, p_this->p_vars->img);
 	
@@ -65,20 +78,21 @@ void Image2D_put(Image2D* const p_this)
 	glEnd();
 	
 	glDisable(GL_TEXTURE_2D);
-	//glPopMatrix();
+
+	View_end();
 }
 
-void Image2D_get_info(Image2D* const p_this, pngInfo* const p_info)
+void Image2D_get_info(const Image2D* p_this, pngInfo* const p_info)
 {
 	*p_info = p_this->p_vars->info;
 }
 
-void Image2D_get_id(Image2D* const p_this, GLuint* const p_rtrn)
+void Image2D_get_id(const Image2D* p_this, GLuint* const p_rtrn)
 {
 	*p_rtrn = p_this->p_vars->img;
 }
 
-void Image2D_get_size(Image2D* const p_this, Vector2D* const p_rtrn){
-	Vector2D_set_x(p_rtrn, p_this->p_vars->info.Width);
-	Vector2D_set_y(p_rtrn, p_this->p_vars->info.Height);
+void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn){
+	p_rtrn->x  = p_this->p_vars->info.Width;
+	p_rtrn->y =  p_this->p_vars->info.Height;
 }

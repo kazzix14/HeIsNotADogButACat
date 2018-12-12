@@ -6,7 +6,7 @@
 #include <time.h>
 #include <math.h>
 
-#include "component2d.h"
+#include "transform2d.h"
 #include "image2d.h"
 #include "vector2d.h"
 #include "view.h"
@@ -17,25 +17,19 @@ void timer(int value);
 void getWindowSize(int *x, int *y);
 void init(int *argc, char **argv, GLuint width, GLuint height, char *title);
 
-Image2D img;
+Image2D* p_img;
 pngInfo info1;
-
-double vertices[][3]={
-	{0.0, 10.0, 0.0},
-	{0.0, 20.0, 50.0},
-	{50.0, 50.0, 0.0},
-	{50.0, 0.0, 0.0}
-};
+View view;
 
 int main(int argc, char **argv)
 {
 	init(&argc, argv, 900, 600, "hello");
 
-	Image2D_construct(&img, "image.png");
-	Vector2D impos;
-	Vector2D_construct(&impos);
-	Vector2D_set(&impos, 20, 20);
-	Component2D_set_position(&(img.parent), &impos);
+	p_img = Image2D_new();
+	Image2D_load(p_img, "resource/test.png");
+	Vector2D_set_zero(&(p_img->p_transform->position));
+	Vector2D_set_zero(&(p_img->p_transform->position));
+	Vector2D_set_identity(&(p_img->p_transform->position));
 
 	glutTimerFunc(500, timer, 0);
 	glutMainLoop();
@@ -50,8 +44,7 @@ void display(void)
 	time(&tt);
 	struct tm *tms;
 	tms = localtime(&tt);
-	View view;
-	View_construct(&view);
+	View* p_view = View_new();
   	//printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
   	//printf("%d:%d:%d\n", tms->tm_hour, tms->tm_min, tms->tm_sec);
 
@@ -60,10 +53,10 @@ void display(void)
 
 
 	glClear(GL_COLOR_BUFFER_BIT);
-	View_begin_2d(&view, ww, wh);
-	Image2D_put(&img);
+	View_begin_2d(p_view, ww, wh);
+	Image2D_put(p_img);
 	View_end();	
-	View_begin_3d(&view, ww, wh);
+	View_begin_3d(p_view, ww, wh);
 
 	glPushMatrix();	
 	//glTranslated(100, 0, 0);

@@ -5,23 +5,27 @@
 #include "view.h"
 #include "vector3d.h"
 
-struct private_varibles
+struct private_variables
 {
 };
 
-void View_construct(View* const p_this)
+View* View_new()
 {
 	// allocate memory for private varibles
-	struct private_varibles* p;
-	p = (struct private_varibles*)malloc(sizeof(struct private_varibles));
-	p_this->p_vars = p;
+	View *v;
+	v = (View*)malloc(sizeof(View));
+	v->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
+	
+	if(v.p_vars == NULL)
+		return NULL;
 
-	Vector3D_construct(&(p_this->position));
+	return v;
 }
 
-void View_deconstruct(View* const p_this)
+void View_release(View* const p_this)
 {
 	free(p_this->p_vars);
+	free(p_this);
 }
 
 void View_begin_2d(View* const p_this, int w, int h)

@@ -8,11 +8,11 @@ typedef struct view
 	Vector3D position,
 		 traget_position,
 		 up_vetor;
-	struct private_varibles* p_vars;	
+	struct private_variables* p_vars;	
 } View;
 
-void View_construct(View* const);
-void View_deconstruct(View* const);
+View* View_new();
+void View_release(View* const);
 void View_begin_2d(View* const, int const, int const);
 void View_begin_3d(View* const, int const, int const);
 void View_end();
