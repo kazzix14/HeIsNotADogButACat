@@ -1,8 +1,13 @@
 #ifndef VIEW_H
 #define VIEW_H
 
+#include "vector3d.h"
+
 typedef struct view
 {
+	Vector3D position,
+		 traget_position,
+		 up_vetor;
 	struct private_varibles* p_vars;	
 } View;
 
@@ -11,7 +16,4 @@ void View_deconstruct(View* const);
 void View_begin_2d(View* const, int const, int const);
 void View_begin_3d(View* const, int const, int const);
 void View_end();
-void View_set_position(View* const, Vector* const);
-void View_set_target_position(View* const, Vector* const);
-void View_set_up_vector(View* const, Vector* const);
 #endif

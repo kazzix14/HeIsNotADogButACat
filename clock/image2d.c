@@ -13,17 +13,17 @@ struct private_varibles
 	pngInfo info;
 };
 
-void Image2D_construct(Image2D* const p_this, char* const image_path)
+Image* Image2D_construct(Image2D* const p_this)
 {
 
 	Component2D_construct(&(p_this->parent));
 
 	// allocate memory for private varibles
-	struct private_varibles* p;
-	p = (struct private_varibles*)malloc(sizeof(struct private_varibles));
-	p_this->p_vars = p;
-	
-	// load image
+	return (struct private_varibles*)malloc(sizeof(struct private_varibles));
+}
+
+void Image2D_load_image(const char* path)
+{
 	p_this->p_vars->img = pngBind(image_path, 
 					PNG_NOMIPMAP,
 					PNG_ALPHA,
@@ -32,16 +32,11 @@ void Image2D_construct(Image2D* const p_this, char* const image_path)
 					GL_NEAREST,
 					GL_NEAREST);
 }
-
 void Image2D_put(Image2D* const p_this)
 {
-	Vector2D pos;
-	Vector2D_construct(&pos);
-	Component2D_get_position(&(p_this->parent), &pos);
-
 	int w = p_this->p_vars->info.Width,
 	    h = p_this->p_vars->info.Height,
-	    x,
+	    x = p_this->,
 	    y;
 
 	Vector2D_get_x(&pos, &x),

@@ -3,12 +3,10 @@
 #include <GL/glut.h>
 
 #include "view.h"
+#include "vector3d.h"
 
 struct private_varibles
 {
-	Vector3D position;
-	Vector3D traget_position;
-	Vector3D up_vetor;
 };
 
 void View_construct(View* const p_this)
@@ -18,7 +16,7 @@ void View_construct(View* const p_this)
 	p = (struct private_varibles*)malloc(sizeof(struct private_varibles));
 	p_this->p_vars = p;
 
-	View3D_construct(&(p_this->p_vars->position));
+	Vector3D_construct(&(p_this->position));
 }
 
 void View_deconstruct(View* const p_this)
@@ -54,7 +52,7 @@ void View_begin_3d(View* const p_this, int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 	glPushMatrix();
 	glLoadIdentity();
-	Vector3D_get(&p_this);
+	
 	gluLookAt(0.0, 0.0, 2000.0,
 		  0.0, -500.0, 0.0,
 		  0.0, 1.0, 0.0);
@@ -66,19 +64,4 @@ void View_end()
 	glPopMatrix();
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
-}
-
-void View_set_position(View* const p_this, Vector* const p_vec)
-{
-	Vector3D_equal(p_this->position, p_vec):
-}
-
-void View_set_target_position(View* const p_this, Vector* const p_vec)
-{
-	Vector3D_equal(p_this->target_position, p_vec):
-}
-
-void View_set_up_vector(View* const p_this, Vector* const p_vec)
-{
-	Vector3D_equal(p_this->up_vector, p_vec):
 }
