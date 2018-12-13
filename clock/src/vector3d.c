@@ -11,37 +11,37 @@ void Vector3D_set(Vector3D* const p_this, const Vector3D* p_pos)
 
 void Vector3D_set_zero(Vector3D* const p_this)
 {
-	p_this->x = 0;
-	p_this->y = 0;
-	p_this->z = 0;
+	p_this->x = 0.0;
+	p_this->y = 0.0;
+	p_this->z = 0.0;
 }
 
 void Vector3D_set_identity(Vector3D* const p_this)
 {
-	p_this->x = 1;
-	p_this->y = 1;
-	p_this->z = 1;
+	p_this->x = 1.0;
+	p_this->y = 1.0;
+	p_this->z = 1.0;
 }
 
 void Vector3D_set_unit_x(Vector3D* const p_this)
 {
-	p_this->x = 1;
-	p_this->y = 0;
-	p_this->z = 0;
+	p_this->x = 1.0;
+	p_this->y = 0.0;
+	p_this->z = 0.0;
 }
 
 void Vector3D_set_unit_y(Vector3D* const p_this)
 {
-	p_this->x = 0;
-	p_this->y = 1;
-	p_this->z = 0;
+	p_this->x = 0.0;
+	p_this->y = 1.0;
+	p_this->z = 0.0;
 }
 
 void Vector3D_set_unit_z(Vector3D* const p_this)
 {
-	p_this->x = 0;
-	p_this->y = 0;
-	p_this->z = 1;
+	p_this->x = 0.0;
+	p_this->y = 0.0;
+	p_this->z = 1.0;
 }
 
 void Vector3D_add(Vector3D* const p_this, const Vector3D* p_oprnd)

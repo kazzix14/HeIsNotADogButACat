@@ -16,9 +16,6 @@ View* View_new()
 	v = (View*)malloc(sizeof(View));
 	v->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
 	
-	if(v->p_vars == NULL)
-		return NULL;
-
 	return v;
 }
 

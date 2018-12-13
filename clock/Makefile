@@ -1,11 +1,17 @@
 CC 	   = gcc
 LD	   = gcc
 
-TARGET     = clock.exe
-SRCS       = $(wildcard *.c)
-OBJS       = $(SRCS:%.c=%.o)
-
+SRCDIR     = src
+HEADERDIR  = src
+OBJDIR     = build
+DEPENDDIR  = depends
 INCDIR     = /usr/include/opengl
+
+TARGET     = clock.exe
+SRCS       = $(wildcard $(SRCDIR)/*.c)
+HEADERS    = $(wildcard $(HEADERDIR)/*.h)
+OBJS       = $(subst $(SRCDIR)/, $(OBJDIR)/, $(SRCS:%.c=%.o))
+DEPENDS    = $(subst $(SRCDIR)/, $(DEPENDDIR)/, $(SRCS:%.c=%.d))
 LIBS 	   = glpng 	  \
        	     glut32       \
        	     glu32	  \
@@ -20,29 +26,29 @@ LDFLAGS    = $(addprefix -l, $(LIBS))
 DEBUG_FLAGS   = -g -O0
 RELEASE_FLAGS = -O2
 
-.PHONY: all debug release conf clean
+.PHONY: all debug release clean
 
-debug  : CFLAGS += $(DEBUG_FLAGS)
+debug  : CCFLAGS += $(DEBUG_FLAGS)
+debug  : LDFLAGS += $(DEBUG_FLAGS)
 debug  : all
 
-release: CFLAGS += $(RELEASE_FLAGS)
+release: CCFLAGS += $(RELEASE_FLAGS)
+release: LDFLAGS += $(RELEASE_FLAGS)
 release: all
 
-all    : $(TARGET)
+all    : $(DEPENDS) $(TARGET)
 $(TARGET): $(OBJS)
 	$(LD) -o $@ $^ $(LDFLAGS)
 
-.c.o:
-	$(CC) -c $^ $(CCFLAGS)
+$(DEPENDDIR)/%.d: $(SRCDIR)/%.c $(HEADERS)
+	-@mkdir -p $(DEPENDDIR)
+	$(CC) -MM $^ $(CCFLAGS) > $@
+
+$(OBJDIR)/%.o:$(SRCDIR)/%.c
+	-@mkdir -p $(OBJDIR)
+	$(CC) -c $^ -o $@ $(CCFLAGS)
 
 clean:
 	-rm -f $(OBJS) $(TARGET)
 
-image2d.o: image2d.c transform2d.h vector2d.h vector3d.h image2d.h view.h
-main.o: main.c transform2d.h vector2d.h vector3d.h image2d.h view.h
-transform2d.o: transform2d.c transform2d.h vector2d.h vector3d.h
-transform3d.o: transform3d.c transform3d.h vector3d.h vector4d.h
-vector2d.o: vector2d.c vector2d.h
-vector3d.o: vector3d.c vector3d.h
-vector4d.o: vector4d.c vector4d.h
-view.o: view.c view.h vector3d.h
+-include $(DEOENDS)

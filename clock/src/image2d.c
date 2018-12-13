@@ -21,6 +21,7 @@ Image2D* Image2D_new()
 	p_img = (Image2D*)malloc(sizeof(Image2D));
 	p_img->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
 	p_img->p_transform = Transform2D_new();
+	p_img->option = IMAGE2D_TOP_LEFT;
 
 	if(p_img == NULL || p_img->p_vars == NULL || p_img->p_transform == NULL)
 		return NULL;
@@ -47,15 +48,36 @@ void Image2D_load(Image2D* const p_this, const char* path)
 
 void Image2D_put(const Image2D* p_this, const View* view)
 {
+	Image2D_put_at(p_this, view, &(p_this->p_transform->position));	
+}
+
+void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* position)
+{
 	int w = p_this->p_vars->info.Width,
 	    h = p_this->p_vars->info.Height;
+
+	// offset
+	int x,
+	    y;
+
+	switch(p_this->option)
+	{
+		case IMAGE2D_TOP_LEFT:
+			x = 0;
+			y = 0;
+			break;
+
+		case IMAGE2D_CENTER:
+			x = -w/2;
+			y = -h/2;
+	}
 
 	View_begin_2d(view);
 
 	Transform2D* t = p_this->p_transform;
-	glTranslatef(t->position.x, t->position.y, 0);
-	glRotatef(t->rotation.z, t->rotation.x, t->rotation.y, 0);
-	glScalef(t->scale.x, t->scale.y, 1);
+	glRotated(t->rotation.w, t->rotation.z, t->rotation.x, t->rotation.y);
+	glTranslated(position->x + x, position->y + y, 0.0f);
+	glScaled(t->scale.x, t->scale.y, 1.0f);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, p_this->p_vars->img);
