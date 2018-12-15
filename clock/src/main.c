@@ -57,25 +57,20 @@ void display(void)
 
 	//for(int i = 0; i < 10; i++)
 	//	Image2D_put(p_num[i], p_view);
-	set_num_pos(500, 500, 150, (double)tms->tm_sec/30*M_PI);
+	//set_num_pos(ww/2, wh/2, 150, (double)tms->tm_sec/30*M_PI);
+	set_num_pos(ww/2, wh/2, 150, 0);
 	put_num();
 
-	//hand
-	p_hand[2]->p_transform->position.x = ww/2;
-	p_hand[2]->p_transform->position.y = wh/2;
-	//p_hand[2]->p_transform->rotation.w = (double)tms->tm_sec/30*M_PI;
+	p_hand[0]->p_transform->rotation.w = (double)tms->tm_hour/12.0*360.0 +
+						(double)tms->tm_min / 60.0 * 6.0 +
+						(double)tms->tm_sec / 60.0 * 0.1;
+	p_hand[1]->p_transform->rotation.w = (double)tms->tm_min/60.0*360.0 +
+						(double)tms->tm_sec / 60.0 * 6.0;
+	p_hand[2]->p_transform->rotation.w = (double)tms->tm_sec/60.0*360.0;
+	Image2D_put(p_hand[0], view);
+	Image2D_put(p_hand[1], view);
 	Image2D_put(p_hand[2], view);
 
-//
-	View_begin_2d(view);
-
-	glBegin(GL_LINES);
-	glVertex2f(ww/2, wh/2);
-	glVertex2f(ww/2 + 70*sin((float)tms->tm_sec/30.0*M_PI), wh/2 - 70*cos((float)tms->tm_sec/30.0*M_PI));
-	glEnd();
-
-	View_end();
-//	
 	glFlush();
 	glutSwapBuffers();
 }
@@ -91,6 +86,12 @@ void reshape(int w, int h)
 	glViewport(0, 0, w, h);
 	view->screen_width = w;
 	view->screen_height = h;
+	p_hand[0]->p_transform->position.x = w/2;
+	p_hand[0]->p_transform->position.y = h/2;
+	p_hand[1]->p_transform->position.x = w/2;
+	p_hand[1]->p_transform->position.y = h/2;
+	p_hand[2]->p_transform->position.x = w/2;
+	p_hand[2]->p_transform->position.y = h/2;
 }
 
 void getWindowSize(int *x, int *y)
@@ -101,18 +102,42 @@ void getWindowSize(int *x, int *y)
 
 void put_num()
 {
+	int w1, w0;
+	Vector2D vec1;
+	Vector2D vec0;
 	for(int i = 0; i < 12; i++)
 	{
 		switch(i)
 		{
 			case 9:
-				Image2D_put_at(p_num[0], view, &num_pos[9]);
+				Image2D_get_size_x(p_num[1], &w1);
+				Image2D_get_size_x(p_num[0], &w0);
+				Vector2D_set(&vec1, &num_pos[9]);
+				Vector2D_set(&vec0, &num_pos[9]);
+				vec1.x -= w1/2*p_num[1]->p_transform->scale.x;
+				vec0.x += w0/2*p_num[0]->p_transform->scale.x;
+				Image2D_put_at(p_num[1], view, &vec1);
+				Image2D_put_at(p_num[0], view, &vec0);
 				break;
 			case 10:
-				Image2D_put_at(p_num[1], view, &num_pos[10]);
+				Image2D_get_size_x(p_num[1], &w1);
+				Image2D_get_size_x(p_num[1], &w0);
+				Vector2D_set(&vec1, &num_pos[10]);
+				Vector2D_set(&vec0, &num_pos[10]);
+				vec1.x -= w1/2*p_num[1]->p_transform->scale.x;
+				vec0.x += w0/2*p_num[1]->p_transform->scale.x;
+				Image2D_put_at(p_num[1], view, &vec1);
+				Image2D_put_at(p_num[1], view, &vec0);
 				break;
 			case 11:
-				Image2D_put_at(p_num[2], view, &num_pos[11]);
+				Image2D_get_size_x(p_num[1], &w1);
+				Image2D_get_size_x(p_num[2], &w0);
+				Vector2D_set(&vec1, &num_pos[11]);
+				Vector2D_set(&vec0, &num_pos[11]);
+				vec1.x -= w1/2*p_num[1]->p_transform->scale.x;
+				vec0.x += w0/2*p_num[2]->p_transform->scale.x;
+				Image2D_put_at(p_num[1], view, &vec1);
+				Image2D_put_at(p_num[2], view, &vec0);
 				break;
 			default:
 				Image2D_put_at(p_num[i+1], view, &num_pos[i]);
@@ -172,6 +197,14 @@ void init_image()
 	p_hand[1]->p_transform->rotation.z = 1;
 	p_hand[2]->p_transform->rotation.z = 1;
 
+	p_hand[0]->p_transform->scale.x = 0.3;
+	p_hand[0]->p_transform->scale.y = -0.3;
+
+	p_hand[1]->p_transform->scale.x = 0.3;
+	p_hand[1]->p_transform->scale.y = -0.3;
+
+	p_hand[2]->p_transform->scale.x = 0.3;
+	p_hand[2]->p_transform->scale.y = -0.3;
 	//load numbers
 	for(int i = 0; i < 10; i++)
 	{

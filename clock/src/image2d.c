@@ -75,9 +75,10 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 	View_begin_2d(view);
 
 	Transform2D* t = p_this->p_transform;
-	glRotated(t->rotation.w, t->rotation.z, t->rotation.x, t->rotation.y);
-	glTranslated(position->x + x, position->y + y, 0.0f);
+	glTranslated(position->x, position->y, 0.0f);
+	glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
 	glScaled(t->scale.x, t->scale.y, 1.0f);
+	glTranslated(x, y, 0.0f);
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, p_this->p_vars->img);
@@ -117,4 +118,12 @@ void Image2D_get_id(const Image2D* p_this, GLuint* const p_rtrn)
 void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn){
 	p_rtrn->x  = p_this->p_vars->info.Width;
 	p_rtrn->y =  p_this->p_vars->info.Height;
+}
+
+void Image2D_get_size_x(const Image2D* p_this, int* const p_rtrn){
+	*p_rtrn = p_this->p_vars->info.Width;
+}
+
+void Image2D_get_size_y(const Image2D* p_this, int* const p_rtrn){
+	*p_rtrn = p_this->p_vars->info.Height;
 }
