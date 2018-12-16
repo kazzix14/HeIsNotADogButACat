@@ -8,7 +8,7 @@ ICONDIR    = .
 ICONIMGDIR = resource/image
 INCDIR     = /usr/include/opengl
 
-TARGET     = clock.exe
+TARGET     = j15435.exe
 SRCS       = $(wildcard $(SRCDIR)/*.c)
 HEADERS    = $(wildcard $(HEADERDIR)/*.h)
 OBJS       = $(subst $(SRCDIR)/, $(OBJDIR)/, $(SRCS:%.c=%.o))
@@ -24,10 +24,12 @@ LIBS 	   = glpng 	  \
 CCFLAGS    = -Wall        \
 	     -I$(INCDIR)  \
 
-LDFLAGS    = $(addprefix -l, $(LIBS))
+LDFLAGS    = $(addprefix -l, $(LIBS))	\
+	     -lpthread \
+	     -pthread \
 
-DEBUG_FLAGS   = -g -O0
-RELEASE_FLAGS = -O2
+DEBUG_FLAGS   = -g3 -O0
+RELEASE_FLAGS = -O2 -s
 
 .PHONY: all debug release clean
 

@@ -22,6 +22,10 @@ Image2D* Image2D_new()
 	p_img->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
 	p_img->p_transform = Transform2D_new();
 	p_img->option = IMAGE2D_TOP_LEFT;
+	p_img->color.x = 255;
+	p_img->color.y = 255;
+	p_img->color.z = 255;
+	p_img->color.w = -1;
 
 	if(p_img == NULL || p_img->p_vars == NULL || p_img->p_transform == NULL)
 		return NULL;
@@ -56,12 +60,13 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 	int w = p_this->p_vars->info.Width,
 	    h = p_this->p_vars->info.Height;
 
-	// offset
 	int x,
 	    y;
 
 	switch(p_this->option)
 	{
+
+		default:
 		case IMAGE2D_TOP_LEFT:
 			x = 0;
 			y = 0;
@@ -82,8 +87,11 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, p_this->p_vars->img);
-	
-	glColor4ub(255, 255, 255, 255);
+
+	if(p_this->color.w < 0)
+		glColor4ub(255, 255, 255, 255);
+	else
+		glColor4ub(p_this->color.x, p_this->color.y, p_this->color.z, p_this->color.w);
 	
 	glBegin(GL_QUADS);
 	glTexCoord2i(0, 0); 
@@ -105,25 +113,18 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 	View_end();
 }
 
-void Image2D_get_info(const Image2D* p_this, pngInfo* const p_info)
+void Image3D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)
 {
-	*p_info = p_this->p_vars->info;
-}
-
-void Image2D_get_id(const Image2D* p_this, GLuint* const p_rtrn)
-{
-	*p_rtrn = p_this->p_vars->img;
-}
-
-void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn){
 	p_rtrn->x  = p_this->p_vars->info.Width;
 	p_rtrn->y =  p_this->p_vars->info.Height;
 }
 
-void Image2D_get_size_x(const Image2D* p_this, int* const p_rtrn){
+void Image2D_get_size_x(const Image2D* p_this, int* const p_rtrn)
+{
 	*p_rtrn = p_this->p_vars->info.Width;
 }
 
-void Image2D_get_size_y(const Image2D* p_this, int* const p_rtrn){
+void Image2D_get_size_y(const Image2D* p_this, int* const p_rtrn)
+{
 	*p_rtrn = p_this->p_vars->info.Height;
 }

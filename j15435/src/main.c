@@ -1,3 +1,12 @@
+/* 
+ * main.c
+ *
+ * (C) 2018 Kazuma Murata
+ * 
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
 #define GLUT_DISABLE_ATEXIT_HACK
 
 #include <GL/glut.h>
@@ -27,7 +36,6 @@ Image2D* p_num[10];
 Image2D* p_hand[3];
 Vector2D num_pos[12];
 
-pngInfo info1;
 View* view;
 
 bool mouse_down;
@@ -38,11 +46,11 @@ int main(int argc, char **argv)
 {
 	mouse_down = false;
 	Vector4D_set_zero(&col);
-	init_gl(&argc, argv, 400, 400, "hello");
+	init_gl(&argc, argv, 400, 400, "Handwritten Clock");
 	init_image();
 	view = View_new();
 
-	glutTimerFunc(20, timer, 0);
+	glutTimerFunc(100, timer, 0);
 	glutMainLoop();
 
 	return(0);
@@ -55,18 +63,11 @@ void display(void)
 	time(&tt);
 	struct tm *tms;
 	tms = localtime(&tt);
-  	
-	//printf("%d/%d/%d ", tms->tm_mday, tms->tm_mon, tms->tm_year);
-  	//printf("%d:%d:%d\n", tms->tm_hour, tms->tm_min, tms->tm_sec);
 	
 	int ww, wh;
 	getWindowSize(&ww, &wh);
 
 	glClear(GL_COLOR_BUFFER_BIT);
-
-	//for(int i = 0; i < 10; i++)
-	//	Image2D_put(p_num[i], p_view);
-	//set_num_pos(ww/2, wh/2, 150, (double)tms->tm_sec/30*M_PI);
 	put_num();
 
 	p_hand[0]->p_transform->rotation.w = (double)tms->tm_hour/12.0*360.0 +
@@ -85,7 +86,7 @@ void display(void)
 
 void timer(int value)
 {
-	glutTimerFunc(500, timer, 0);
+	glutTimerFunc(100, timer, 0);
 	glutPostRedisplay();
 }
 
@@ -120,17 +121,11 @@ void change_color()
 {
 	for(int i = 0; i < 10; i++)
 	{
-		p_num[i]->color.x = col.x;
-		p_num[i]->color.y = col.y;
-		p_num[i]->color.z = col.z;
-		p_num[i]->color.w = col.w;
+		Vector4D_set(&(p_num[i]->color), &col);
 	}
 	for(int i = 0; i < 3; i++)
 	{
-		p_hand[i]->color.x = col.x;
-		p_hand[i]->color.y = col.y;
-		p_hand[i]->color.z = col.z;
-		p_hand[i]->color.w = col.w;
+		Vector4D_set(&(p_hand[i]->color), &col);
 	}
 }
 
@@ -208,6 +203,7 @@ void init_gl(int *argc, char **argv, GLuint width, GLuint height, char *title)
 	glutInit(argc, argv);
 	glutInitWindowSize(width, height);
 	glutCreateWindow(title);
+	glutPositionWindow(100, 100);
 	glutInitDisplayMode(GLUT_RGBA | GLUT_ALPHA | GLUT_DOUBLE | GL_DEPTH);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
 
