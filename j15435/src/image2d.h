@@ -33,6 +33,7 @@ Image2D* Image2D_new();
 void Image2D_release(Image2D* const);
 void Image2D_load(Image2D* const, const char*);
 void Image2D_put(const Image2D*, const View*);
+void Image2D_put_at_with_option(const Image2D*, const View*, const Vector2D*, const int option);
 void Image2D_put_at(const Image2D*, const View*, const Vector2D*);
 void Image2D_get_info(const Image2D*, pngInfo* const);
 void Image2D_get_id(const Image2D*, GLuint* const);

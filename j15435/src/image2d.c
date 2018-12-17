@@ -65,6 +65,11 @@ void Image2D_put(const Image2D* p_this, const View* view)
 	Image2D_put_at(p_this, view, &(p_this->p_transform->position));	
 }
 
+void Image2D_put_with_offset(const Image2D* p_this, const View* view, const Vector2D* p_offset)
+{
+	Image2D_put_at(p_this, view, &(p_this->p_transform->position) );	
+}
+
 void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* position)
 {
 	int w = p_this->p_vars->info.Width,
