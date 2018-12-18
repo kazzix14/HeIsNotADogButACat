@@ -25,13 +25,13 @@ typedef struct animationcontroller2d
 	struct private_variables* pv;	
 } AnimationController2D;
 
-AnimationControler2D* AnimationController2D_new();
-void AnimationController2D_release(Animation2D* const);
-void AnimationController2D_load(Animation2D* const, const char*, const int num);
-void AnimationController2D_play(const Animation2D*, const View*);
-void AnimationController2D_put_with_offset(const Animation2D*, const View*, const Vector2D*);
-void AnimationController2D_get_size(const Animation2D*, Vector2D* const);
-void AnimationController2D_get_size_x(const Animation2D*, int* const);
-void AnimationController2D_get_size_y(const Animation2D*, int* const);
+AnimationController2D* AnimationController2D_new();
+void AnimationController2D_add_animation(AnimationController2D*, const Animation2D*, const char*);
+void AnimationController2D_remove_animation(AnimationController2D*, const char*);
+void AnimationController2D_release(AnimationController2D* const);
+void AnimationController2D_load(AnimationController2D* const, const char*, const int num);
+void AnimationController2D_get_size(const AnimationController2D*, Vector2D* const);
+void AnimationController2D_get_size_x(const AnimationController2D*, int* const);
+void AnimationController2D_get_size_y(const AnimationController2D*, int* const);
 
 #endif
