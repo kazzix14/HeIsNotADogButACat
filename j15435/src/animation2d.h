@@ -24,18 +24,15 @@
 struct private_variables;
 typedef struct animation2d
 {
-	Transform2D* p_transform;	
-	struct private_variables* p_vars;	
+	Transform2D* transform;	
+	struct private_variables* pv;	
 } Animation2D;
 
 Animation2D* Animation2D_new();
 void Animation2D_release(Animation2D* const);
-void Animation2D_load(Animation2D* const, const char*);
-void Animation2D_put(const Animation2D*, const View*);
+void Animation2D_load(Animation2D* const, const char*, const int num);
+void Animation2D_play(const Animation2D*, const View*);
 void Animation2D_put_with_offset(const Animation2D*, const View*, const Vector2D*);
-void Animation2D_put_at(const Animation2D*, const View*, const Vector2D*);
-void Animation2D_get_info(const Animation2D*, pngInfo* const);
-void Animation2D_get_id(const Animation2D*, GLuint* const);
 void Animation2D_get_size(const Animation2D*, Vector2D* const);
 void Animation2D_get_size_x(const Animation2D*, int* const);
 void Animation2D_get_size_y(const Animation2D*, int* const);

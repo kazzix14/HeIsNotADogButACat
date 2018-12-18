@@ -40,8 +40,8 @@ void Vector2D_set_unit_y(Vector2D* const p_this)
 	p_this->y = 1.0;
 }
 
-Vector2D* Vector2D_add(const Vector2D* p_this, const Vector2D* p_vec)
-
+void Vector2D_add(Vector2D* const p_this, const Vector2D* p_vec)
+{
 	p_this->x += p_vec->x;
 	p_this->y += p_vec->y;
 }

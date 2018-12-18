@@ -128,7 +128,7 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 	View_end();
 }
 
-void Image3D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)
+void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)
 {
 	p_rtrn->x  = p_this->p_vars->info.Width;
 	p_rtrn->y =  p_this->p_vars->info.Height;
