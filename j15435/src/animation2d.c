@@ -23,6 +23,7 @@ static void release_images(Animation2D* const, const int, const int);
 struct private_variables
 {
 	unsigned int anim_length;
+	unsigned int anim_speed;
 	unsigned int current_frame;
 	Image2D** p_imgs;
 };
@@ -38,23 +39,37 @@ Animation2D* Animation2D_new()
 	if(p_anim == NULL || p_anim->pv == NULL || p_anim->transform == NULL)
 		return NULL;
 
+	p_anim->pv->anim_length = 0;
+	p_anim->pv->anim_speed = 1;
+	p_anim->pv->current_frame = 0;
+
 	return p_anim;
 }
 
 void Animation2D_load(Animation2D* const p_this, const char* path_dir, const int num)
 {
-	if(num < p_this->pv->anim_length)
-		release_images(p_this, num, p_this->pv->anim_length);
+	if(p_this->pv->anim_length == 0)
+	{
+		p_this->pv->p_imgs = (Image2D**)malloc(sizeof(Image2D*) * num);
+	}
+	else if(num != p_this->pv->anim_length)
+	{
+		p_this->pv->p_imgs = (Image2D**)realloc(p_this->pv->p_imgs, sizeof(Image2D*) * num);
+	}
 
-	p_this->pv->anim_length = num;
+
 	char path[ANIMATION2D_LOAD_PATH_LIMIT];
 	for (int i = 0; i < num; i++)
 	{
-		if(p_this->pv->p_imgs[i] == NULL)
+		if(p_this->pv->anim_length <= i)
 			p_this->pv->p_imgs[i] = Image2D_new();
-		snprintf(path, ANIMATION2D_LOAD_PATH_LIMIT, "%s/%d", path_dir, i);
+		snprintf(path, ANIMATION2D_LOAD_PATH_LIMIT, "%s/%d.png", path_dir, i);
 		Image2D_load(p_this->pv->p_imgs[i], path);
+
+		Transform2D_set_default(p_this->pv->p_imgs[i]->p_transform);
+		p_this->pv->p_imgs[i]->option = IMAGE2D_CENTER;
 	}
+	p_this->pv->anim_length = num;
 }
 
 static void release_images(Animation2D* const p_this, const int from, const int to)
@@ -66,6 +81,7 @@ static void release_images(Animation2D* const p_this, const int from, const int 
 void Animation2D_release(Animation2D* const p_this)
 {
 	release_images(p_this, 0, p_this->pv->anim_length);
+	free(p_this->pv->p_imgs);
 	free(p_this->pv);
 	free(p_this->transform);
 	free(p_this);
@@ -74,7 +90,9 @@ void Animation2D_release(Animation2D* const p_this)
 void Animation2D_play(const Animation2D* p_this, const View* view)
 {
 	Image2D_put(p_this->pv->p_imgs[p_this->pv->current_frame], view);	
-	p_this->pv->current_frame += 1;
+
+	if(++p_this->pv->current_frame == p_this->pv->anim_length)
+		p_this->pv->current_frame = 0;
 }
 
 void Animation2D_get_size(const Animation2D* p_this, Vector2D* const p_rtrn)

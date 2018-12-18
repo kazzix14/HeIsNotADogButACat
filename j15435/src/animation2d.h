@@ -11,8 +11,6 @@
 #define ANIMATION2D_H
 
 #define ANIMATION2D_LOAD_PATH_LIMIT 256
-#define ANIMATION2D_TOP_LEFT 1
-#define ANIMATION2D_CENTER 2
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
