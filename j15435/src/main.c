@@ -20,6 +20,7 @@
 #include "vector2d.h"
 #include "view.h"
 #include "animation2d.h"
+#include "animation_controller2d.h"
 
 void display(void);
 void reshape(int, int);
@@ -36,6 +37,7 @@ void keyboard(unsigned char, int, int);
 
 View* view;
 Animation2D* anim;
+AnimationController2D* anmcnt;
 
 int main(int argc, char **argv)
 {
@@ -46,6 +48,9 @@ int main(int argc, char **argv)
 	anim = Animation2D_new();
 	Animation2D_load(anim, "resource/animation/test", 2);
 	Transform2D_set_default(anim->transform);
+
+	anmcnt = AnimationController2D_new();
+	AnimationController2D_add_animation(anmcnt, anim, "test");
 
 	glutTimerFunc(100, timer, 0);
 	glutMainLoop();

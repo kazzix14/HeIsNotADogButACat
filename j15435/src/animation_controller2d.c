@@ -9,6 +9,7 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <string.h>
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
@@ -39,14 +40,16 @@ AnimationController2D* AnimationController2D_new()
 	if(p_anmcnt == NULL || p_anmcnt->pv == NULL)
 		return NULL;
 
+	p_anmcnt->pv->anim_num = 0;
+
 	return p_anmcnt;
 }
 
 // sharing a animation object among some animation controllers may cause a problem
 // which animations on each controller will sync
-void AnimationController2D_add_animation(AnimationController2D* p_this, const Animation2D* p_anim, const char* name)
+void AnimationController2D_add_animation(AnimationController2D* p_this, Animation2D* const p_anim, const char* name)
 {
-	// allocate mameory
+	// allocate memory
 	if(p_this->pv->anim_num == 0)
 	{
 		p_this->pv->anim_names = (char**)malloc(sizeof(char*));
@@ -58,7 +61,9 @@ void AnimationController2D_add_animation(AnimationController2D* p_this, const An
 		p_this->pv->p_anims = (Animation2D**)realloc(p_this->pv->p_anims, sizeof(Animation2D*) * (p_this->pv->anim_num + 1));
 	}
 
-	p_this->pv->anim_names[p_this->pv->anim_num] = name;
+	p_this->pv->anim_names[p_this->pv->anim_num] = (char*)malloc(sizeof(char) * ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT);
+
+	strncpy(p_this->pv->anim_names[p_this->pv->anim_num], name, ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT);
 	p_this->pv->p_anims[p_this->pv->anim_num] = p_anim;
 
 	p_this->pv->anim_num += 1;
@@ -102,7 +107,6 @@ void AnimationController2D_get_size_y(const AnimationController2D* p_this, int* 
 static void get_index_from_name(const AnimationController2D* p_this, const char* name, unsigned int* const p_index)
 {
 	for(int i = 0; i < p_this->pv->anim_num; i++)
-		if(p_this->pv->anim_names[i] == name)
+		if(strncmp(p_this->pv->anim_names[i], name, ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT))
 			*p_index = i;
-	*p_index = NULL;
 }

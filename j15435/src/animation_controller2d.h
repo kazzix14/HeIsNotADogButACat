@@ -26,7 +26,7 @@ typedef struct animationcontroller2d
 } AnimationController2D;
 
 AnimationController2D* AnimationController2D_new();
-void AnimationController2D_add_animation(AnimationController2D*, const Animation2D*, const char*);
+void AnimationController2D_add_animation(AnimationController2D*, Animation2D* const, const char*);
 void AnimationController2D_remove_animation(AnimationController2D*, const char*);
 void AnimationController2D_release(AnimationController2D* const);
 void AnimationController2D_load(AnimationController2D* const, const char*, const int num);
