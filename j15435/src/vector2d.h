@@ -10,6 +10,8 @@
 #ifndef VECTOR2D_H
 #define VECTOR2D_H
 
+// vec2 ascii
+#define VECTOR2D_TYPE_ID 11811995
 typedef struct vector2d
 {
 	double x,

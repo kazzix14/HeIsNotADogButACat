@@ -10,6 +10,9 @@
 #ifndef IMAGE2D_H
 #define IMAGE2D_H
 
+// obj -> 111 098 106 -> 1119816
+#define OBJECT_TYPE_ID 1119816
+
 #define IMAGE2D_TOP_LEFT 1
 #define IMAGE2D_CENTER 2
 
@@ -23,21 +26,12 @@
 struct private_variables;
 typedef struct object
 {
-	void** components;
-	unsigned int components_num;
 	struct private_variables* pv;	
 } Object;
 
 Object* Object_new();
+void Object_add_component(Object* p_this, const void* p_cmpt const int type_id)
+void Object_remove_component(Object* p_this, const int type_id)
 void Object_release(Object* const);
-void Object_load(Object* const, const char*);
-void Object_put(const Object*, const View*);
-void Object_put_at_with_option(const Object*, const View*, const Vector2D*, const int option);
-void Object_put_at(const Object*, const View*, const Vector2D*);
-void Object_get_info(const Object*, pngInfo* const);
-void Object_get_id(const Object*, GLuint* const);
-void Object_get_size(const Object*, Vector2D* const);
-void Object_get_size_x(const Object*, int* const);
-void Object_get_size_y(const Object*, int* const);
 
 #endif

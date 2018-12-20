@@ -10,6 +10,8 @@
 #ifndef ANIMATION2D_H
 #define ANIMATION2D_H
 
+// an2 -> 097 110 050 -> 97 11 5
+#define ANIMATION2D_TYPE_ID 97115
 #define ANIMATION2D_LOAD_PATH_LIMIT 256
 
 #include <GL/glut.h>

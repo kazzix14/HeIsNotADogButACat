@@ -10,6 +10,8 @@
 #ifndef VECTOR4D_H
 #define VECTOR4D_H
 
+#define VECTOR4D_TYPE_ID 118119952
+
 #include <stdbool.h>
 
 typedef struct vector4d

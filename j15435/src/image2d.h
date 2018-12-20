@@ -10,6 +10,8 @@
 #ifndef IMAGE2D_H
 #define IMAGE2D_H
 
+// im2 -> 105 109 050
+#define IMAGE2D_TYPE_ID 15195
 #define IMAGE2D_TOP_LEFT 1
 #define IMAGE2D_CENTER 2
 

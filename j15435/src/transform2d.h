@@ -10,6 +10,8 @@
 #ifndef TRANSFORM2D_H
 #define TRANSFORM2D_H
 
+// tr2 ascii
+#define TRANSFORM2D_TYPE_ID 1161145
 #include "vector2d.h"
 #include "vector4d.h"
 
