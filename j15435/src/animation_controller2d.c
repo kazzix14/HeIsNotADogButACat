@@ -26,6 +26,7 @@ struct private_variables
 {
 	Animation2D** p_anims;
 	char** anim_names;
+	Animation2D* current_anim;
 	unsigned int anim_num;
 };
 
@@ -71,7 +72,7 @@ void AnimationController2D_add_animation(AnimationController2D* p_this, Animatio
 void AnimationController2D_remove_animation(AnimationController2D* p_this, const char* name)
 {
 	unsigned int index;
-       	get_index_from_name(p_this, name, &index);
+       	get_index_from_name(p_this, &index, name);
 
 	p_this->pv->anim_num--;
 
@@ -91,21 +92,21 @@ void AnimationController2D_release(AnimationController2D* const p_this)
 	//free(p_this);
 }
 
-void AnimationController2D_get_size(const AnimationController2D* p_this, Vector2D* const p_rtrn)
+void AnimationController2D_play(const AnimationController2D* p_this)
 {
+	Animation2D_play(p_this->pv->current_anim);
 }
 
-void AnimationController2D_get_size_x(const AnimationController2D* p_this, int* const p_rtrn)
+void AnimationController2D_switch(AnimationController2D* const p_this, const char* name)
 {
-}
-
-void AnimationController2D_get_size_y(const AnimationController2D* p_this, int* const p_rtrn)
-{
+	unsigned int index;
+	get_index_from_name(p_this, &index, name);
+	p_this->pv->current_anim = p_this->pv->p_anims[index];
 }
 
 static void get_index_from_name(const AnimationController2D* p_this, unsigned int* const p_index, const char* name)
 {
 	for(int i = 0; i < p_this->pv->anim_num; i++)
-		if(strncmp(p_this->pv->anim_names[i], name, ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT))
+		if(strncmp(p_this->pv->anim_names[i], name, ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT) == 0)
 			*p_index = i;
 }

@@ -60,17 +60,17 @@ void Image2D_load(Image2D* const p_this, const char* path)
 					GL_NEAREST);
 }
 
-void Image2D_put(const Image2D* p_this, const View* view)
+void Image2D_put(const Image2D* p_this)
 {
-	Image2D_put_at(p_this, view, &(p_this->p_transform->position));	
+	Image2D_put_at(p_this, &(p_this->p_transform->position));	
 }
 
-void Image2D_put_with_offset(const Image2D* p_this, const View* view, const Vector2D* p_offset)
+void Image2D_put_with_offset(const Image2D* p_this, const Vector2D* p_offset)
 {
-	Image2D_put_at(p_this, view, &(p_this->p_transform->position) );	
+	Image2D_put_at(p_this, &(p_this->p_transform->position) );	
 }
 
-void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* position)
+void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 {
 	int w = p_this->p_vars->info.Width,
 	    h = p_this->p_vars->info.Height;
@@ -92,7 +92,7 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 			y = -h/2;
 	}
 
-	View_begin_2d(view);
+	//View_begin_2d(view);
 
 	Transform2D* t = p_this->p_transform;
 	glTranslated(position->x, position->y, 0.0f);
@@ -125,7 +125,7 @@ void Image2D_put_at(const Image2D* p_this, const View* view, const Vector2D* pos
 	
 	glDisable(GL_TEXTURE_2D);
 
-	View_end();
+	//View_end();
 }
 
 void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)

@@ -23,7 +23,7 @@ static void release_images(Animation2D* const, const int, const int);
 struct private_variables
 {
 	unsigned int anim_length;
-	unsigned int anim_speed;
+	unsigned int frame_length;
 	unsigned int current_frame;
 	Image2D** p_imgs;
 };
@@ -40,7 +40,7 @@ Animation2D* Animation2D_new()
 		return NULL;
 
 	p_anim->pv->anim_length = 0;
-	p_anim->pv->anim_speed = 1;
+	p_anim->pv->frame_length = 1;
 	p_anim->pv->current_frame = 0;
 
 	return p_anim;
@@ -72,12 +72,6 @@ void Animation2D_load(Animation2D* const p_this, const char* path_dir, const int
 	p_this->pv->anim_length = num;
 }
 
-static void release_images(Animation2D* const p_this, const int from, const int to)
-{
-	for(int i = from; i < to;i++)
-		Image2D_release(p_this->pv->p_imgs[i]);
-}
-
 void Animation2D_release(Animation2D* const p_this)
 {
 	release_images(p_this, 0, p_this->pv->anim_length);
@@ -87,22 +81,28 @@ void Animation2D_release(Animation2D* const p_this)
 	free(p_this);
 }
 
-void Animation2D_play(const Animation2D* p_this, const View* view)
+void Animation2D_set_frame_length(Animation2D* const p_this, const unsigned int frame_length)
 {
-	Image2D_put(p_this->pv->p_imgs[p_this->pv->current_frame], view);	
+	p_this->pv->frame_length = frame_length;
+}
 
-	if(++p_this->pv->current_frame == p_this->pv->anim_length)
+void Animation2D_play(const Animation2D* p_this)
+{
+	Transform2D* t = p_this->transform;
+	glTranslated(t->position.x, t->position.y, 0.0f);
+	glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
+	glScaled(t->scale.x, t->scale.y, 1.0f);
+
+	Image2D_put(p_this->pv->p_imgs[p_this->pv->current_frame/p_this->pv->frame_length]);	
+
+	if(p_this->pv->current_frame == p_this->pv->anim_length*p_this->pv->frame_length-1)
 		p_this->pv->current_frame = 0;
+	else
+		p_this->pv->current_frame++;
 }
 
-void Animation2D_get_size(const Animation2D* p_this, Vector2D* const p_rtrn)
+static void release_images(Animation2D* const p_this, const int from, const int to)
 {
-}
-
-void Animation2D_get_size_x(const Animation2D* p_this, int* const p_rtrn)
-{
-}
-
-void Animation2D_get_size_y(const Animation2D* p_this, int* const p_rtrn)
-{
+	for(int i = from; i < to;i++)
+		Image2D_release(p_this->pv->p_imgs[i]);
 }

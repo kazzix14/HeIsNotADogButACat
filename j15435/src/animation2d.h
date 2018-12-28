@@ -30,11 +30,9 @@ typedef struct animation2d
 
 Animation2D* Animation2D_new();
 void Animation2D_release(Animation2D* const);
-void Animation2D_load(Animation2D* const, const char*, const int num);
-void Animation2D_play(const Animation2D*, const View*);
-void Animation2D_put_with_offset(const Animation2D*, const View*, const Vector2D*);
-void Animation2D_get_size(const Animation2D*, Vector2D* const);
-void Animation2D_get_size_x(const Animation2D*, int* const);
-void Animation2D_get_size_y(const Animation2D*, int* const);
+void Animation2D_load(Animation2D* const, const char*, const int);
+void Animation2D_play(const Animation2D*);
+void Animation2D_set_frame_length(Animation2D* const, const unsigned int);
+void Animation2D_put_with_offset(const Animation2D*, const Vector2D*);
 
 #endif

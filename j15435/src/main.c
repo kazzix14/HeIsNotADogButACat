@@ -21,6 +21,7 @@
 #include "view.h"
 #include "animation2d.h"
 #include "animation_controller2d.h"
+#include "object.h"
 
 void display(void);
 void reshape(int, int);
@@ -36,8 +37,11 @@ void mouse(int, int, int, int);
 void keyboard(unsigned char, int, int);
 
 View* view;
-Animation2D* anim;
+Object *obj;
 AnimationController2D* anmcnt;
+Animation2D* run_anim;
+Animation2D* num_anim;
+int count;
 
 int main(int argc, char **argv)
 {
@@ -45,12 +49,26 @@ int main(int argc, char **argv)
 	init();
 	view = View_new();
 
-	anim = Animation2D_new();
-	Animation2D_load(anim, "resource/animation/test", 2);
-	Transform2D_set_default(anim->transform);
+	run_anim = Animation2D_new();
+	num_anim = Animation2D_new();
+	Animation2D_load(run_anim, "resource/animation/run_test", 4);
+	Animation2D_load(num_anim, "resource/animation/test", 2);
+	Animation2D_set_frame_length(run_anim, 4);
+	Animation2D_set_frame_length(num_anim, 10);
+	Transform2D_set_default(run_anim->transform);
+	Transform2D_set_default(num_anim->transform);
+	run_anim->transform->position.x = 200;
+	run_anim->transform->position.y = 200;
+	num_anim->transform->position.x = 200;
+	num_anim->transform->position.y = 200;
 
 	anmcnt = AnimationController2D_new();
-	AnimationController2D_add_animation(anmcnt, anim, "test");
+	AnimationController2D_add_animation(anmcnt, run_anim, "run");
+	AnimationController2D_add_animation(anmcnt, num_anim, "num");
+	AnimationController2D_switch(anmcnt, "run");
+	obj = Object_new();
+	Transform2D_set_default(obj->transform);
+	Object_set_AnimationController2D(obj, anmcnt);
 
 	glutTimerFunc(100, timer, 0);
 	glutMainLoop();
@@ -65,7 +83,15 @@ void display(void)
 
 	glClear(GL_COLOR_BUFFER_BIT);
 
-	Animation2D_play(anim, view);
+	View_begin_2d(view);
+	//Animation2D_play(anim);
+	if(count++ == 100){
+		AnimationController2D_switch(anmcnt, "num");
+	}
+	//AnimationController2D_play(anmcnt);
+	Object_play_AnimationController2D(obj);
+
+	View_end();
 
 	glFlush();
 	glutSwapBuffers();
@@ -128,4 +154,8 @@ void keyboard(unsigned char key, int x, int y)
 	//q esc
 	if((key == 'q') || (key == 27))
 		exit(0);
+	if((key == 'h'))
+		obj->transform->position.x -= 1;
+	if((key == 'l'))
+		obj->transform->position.x += 1;
 }

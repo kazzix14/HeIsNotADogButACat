@@ -1,5 +1,5 @@
 /* 
- * object.h
+ * block2d.h
  *
  * (C) 2018 Kazuma Murata
  * 
@@ -7,11 +7,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
  
-#ifndef OBJECT_H
-#define OBJECT_H
+#ifndef BLOCK_H
+#define BLOCK_H
 
-// obj -> 111 098 106 -> 1119816
-#define OBJECT_TYPE_ID 1119816
+// blk -> 098 108 107 -> 981817
+#define BLOCK_TYPE_ID 981817
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
@@ -23,16 +23,16 @@
 #include "animation_controller2d.h"
  
 struct private_variables;
-typedef struct object
+typedef struct block2d
 {
-	Transform2D* transform;
 	struct private_variables* pv;	
-} Object;
+} Block2D;
 
-Object* Object_new();
-void Object_set_Image2D(Object* const, Image2D* const);
-void Object_set_AnimationController2D(Object* const, AnimationController2D* const);
-void Object_play_AnimationController2D(const Object*);
-void Object_release(Object* const);
+Block2D* Block2D_new();
+void Block2D_set_Image2D(Block2D* const, Image2D* const);
+void Block2D_release(Block2D* const);
+void Block2D_put(const Block2D*);
+void Block2D_get_hp(const Block2D*, unsigned char* const);
+void Block2D_set_hp(Block2D* const, const unsigned char);
 
 #endif

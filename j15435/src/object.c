@@ -1,5 +1,4 @@
-/* 
- * object.c
+/* * object.c
  *
  * (C) 2018 Kazuma Murata
  * 
@@ -15,14 +14,13 @@
 #include "object.h"
 #include "vector2d.h"
 #include "view.h"
-
-static void get_index_from_type_id(const Object*, const int, unsigned int* const);
+#include "image2d.h"
+#include "animation_controller2d.h"
 
 struct private_variables
 {
-	void** p_cmpts;
-	int* cmpt_types;
-	unsigned int cmpt_num;
+	Image2D* p_img;
+	AnimationController2D* p_ac;
 };
 
 Object* Object_new()
@@ -31,46 +29,38 @@ Object* Object_new()
 	Object* p_obj;
 
 	p_obj = (Object*)malloc(sizeof(Object));
+	p_obj->transform = Transform2D_new();
 	p_obj->pv = (struct private_variables*)malloc(sizeof(struct private_variables));
-	//p_obj->pv->cmpnnts = ((void**)malloc(sizeof(void*));
-	//p_obj->pv->cmpnnt_types = ((int*)malloc(sizeof(int));
+	p_obj->pv->p_img = Image2D_new();
+	p_obj->pv->p_ac = AnimationController2D_new();
 
-	if(p_obj == NULL || p_obj->pv == NULL)
+	if( p_obj	     == NULL ||
+	    p_obj->pv	     == NULL ||
+	    p_obj->pv->p_img == NULL ||
+	    p_obj->pv->p_ac  == NULL )
 		return NULL;
 
 	return p_obj;
 }
 
-void Object_add_component(Object* p_this, const void* p_cmpt const int type_id)
+void Object_set_Image2D(Object* const p_this, Image2D* const p_img)
 {
-	// allocate memory
-	if(p_this->cmpt_num == 0)
-	{
-		p_this->pv->p_cmpts = (void**)malloc(sizeof(void*));
-		p_this->pv->cmpt_types = (int*)malloc(sizeof(int));
-	}
-	else
-	{
-		p_this->pv->p_cmpts = (void**)realloc(p_this->pv->p_cmpts, sizeof(void*) * (p_this->pv->cmpt_num + 1));
-		p_this->pv->cmpt_types = (int*)realloc(p_this->pv->cmpt_num, sizeof(int) * (p_this->pv->cmpt_num + 1));
-	}
-
-	p_this->pv->p_cmpts[p_this->pv->cmpt_num] = p_cmpt;
-	p_this->pv->cmpt_num += 1;
+	p_this->pv->p_img = p_img;
 }
 
-void Object_remove_component(Object* p_this, const int type_id)
+void Object_set_AnimationController2D(Object* const p_this, AnimationController2D* const p_ac)
 {
-	unsigned int index;
-       	get_index_from_type_id(p_this, &index, type_id);
+	p_this->pv->p_ac = p_ac;
+}
 
-	p_this->pv->cmpt_num--;
-
-	p_this->pv->p_cmpts[index] = p_this->pv->p_cmpts[p_this->pv->cmpt_num];
-	p_this->pv->anim_cmpt_types[index] = p_this->pv->cmpt_types[p_this->pv->cmpt_num];
-
-	p_this->pv->p_cmpts = (void**)realloc(p_this->pv->p_cmpts, sizeof(void*) * (p_this->pv->cmpt_num));
-	p_this->pv->cmpt_types = (int*)realloc(p_this->pv->cmpt_num, sizeof(int) * (p_this->pv->cmpt_num));
+void Object_play_AnimationController2D(const Object* p_this)
+{
+	Transform2D* t = p_this->transform;
+	glTranslated(t->position.x, t->position.y, 0.0f);
+	glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
+	glScaled(t->scale.x, t->scale.y, 1.0f);
+	
+	AnimationController2D_play(p_this->pv->p_ac);
 }
 
 void Object_release(Object* const p_this)
@@ -78,11 +68,4 @@ void Object_release(Object* const p_this)
 	//free(p_this->pv->);
 	//free(p_this->pv);
 	//free(p_this);
-}
-
-static void get_index_from_type_id(const Object* p_this, unsigned int* const p_index, const int type_id)
-{
-	for(int i = 0; i < p_this->pv->cmpt_num; i++)
-		if(p_this->cmpt_num == type_id)
-			*p_index = i;
 }
