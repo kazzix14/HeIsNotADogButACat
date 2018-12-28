@@ -28,9 +28,9 @@ struct private_variables
 	unsigned int depth;
 };
 
-
 Grid3D* Grid3D_new(unsigned int w, unsigned int h, unsigned int d)
 {
+
 	// allocate memory
 	Grid3D* grid;
 	grid = (Grid3D*)malloc(sizeof(Grid3D));
