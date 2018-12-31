@@ -10,11 +10,13 @@
 #ifndef BLOCK_H
 #define BLOCK_H
 
-// blk -> 098 108 107 -> 981817
-#define BLOCK_TYPE_ID 981817
-
 #include <GL/glut.h>
 #include <GL/glpng.h>
+
+// blk2 -> 098 108 107 050 -> 9818175
+#define BLOCK2D_TYPE_ID 9818175
+
+#define BLOCK2D_IMAGE_SIZE 32
 
 #include "transform2d.h"
 #include "view.h"
@@ -29,7 +31,7 @@ typedef struct block2d
 } Block2D;
 
 Block2D* Block2D_new();
-void Block2D_set_Image2D(Block2D* const, Image2D* const);
+void Block2D_load_Image2D(Block2D* const, const char*);
 void Block2D_release(Block2D* const);
 void Block2D_put(const Block2D*);
 void Block2D_get_hp(const Block2D*, unsigned char* const);

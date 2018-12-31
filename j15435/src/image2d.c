@@ -75,6 +75,7 @@ void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 	int w = p_this->p_vars->info.Width,
 	    h = p_this->p_vars->info.Height;
 
+	// offset
 	int x,
 	    y;
 

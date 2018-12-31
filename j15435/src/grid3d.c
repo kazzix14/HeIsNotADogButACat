@@ -8,6 +8,7 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <GL/glut.h>
 #include <GL/glpng.h>
 
 #include "transform2d.h"
@@ -25,7 +26,7 @@ struct private_variables
 	void**** cmpt;
 	unsigned int width;
 	unsigned int height;
-	unsigned int depth;
+	int depth;
 };
 
 Grid3D* Grid3D_new(unsigned int w, unsigned int h, unsigned int d)
@@ -90,9 +91,29 @@ void Grid3D_release(Grid3D* const this)
 	//free(p_this);
 }
 
-void Grid3D_put(const Grid3D* this)
+void Grid3D_put(const Grid3D* this, const unsigned int d, const View* view)
 {
-	//Image2D_put(this->pv->img);
+	for(int i = 0; i < this->pv->width; i++)
+	{
+		if(!(i*BLOCK2D_IMAGE_SIZE < view->position.x + view->window_width))
+			continue;
+		if( view->position.x <= (i+1)*BLOCK2D_IMAGE_SIZE )
+		{
+		for(int j = 0; j < this->pv->height; j++)
+			{
+				if(!(j*BLOCK2D_IMAGE_SIZE < view->position.y + view->window_height))
+					continue;
+				if( view->position.y <= (j+1)*BLOCK2D_IMAGE_SIZE )
+				{
+					glPushMatrix();
+					glLoadIdentity();
+					glTranslated(i*BLOCK2D_IMAGE_SIZE, j*BLOCK2D_IMAGE_SIZE, 0.0);
+					Block2D_put(this->pv->blk[i][j][d]);
+					glPopMatrix();
+				}
+			}
+		}
+	}
 }
 
 void Grid3D_set_Block2D(Grid3D* const this, const unsigned int w, const unsigned int h, const unsigned int d, Block2D* const blk)

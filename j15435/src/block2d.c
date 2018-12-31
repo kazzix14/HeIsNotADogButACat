@@ -31,7 +31,7 @@ Block2D* Block2D_new()
 	blk = (Block2D*)malloc(sizeof(Block2D));
 	blk->pv = (struct private_variables*)malloc(sizeof(struct private_variables));
 	blk->pv->img = Image2D_new();
-	blk->pv->img->option = IMAGE2D_TOP_LEFT;
+	Transform2D_set_default(blk->pv->img->p_transform);
 
 	if( blk	     	 == NULL ||
     	    blk->pv->img == NULL )
@@ -47,9 +47,9 @@ void Block2D_release(Block2D* const this)
 	//free(p_this);
 }
 
-void Block2D_set_Image2D(Block2D* const this, Image2D* const img)
+void Block2D_load_Image2D(Block2D* const this, const char* path)
 {
-	this->pv->img = img;
+	Image2D_load(this->pv->img, path);
 }
 
 void Block2D_put(const Block2D* this)

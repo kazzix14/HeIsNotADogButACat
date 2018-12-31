@@ -10,6 +10,7 @@
 #define GLUT_DISABLE_ATEXIT_HACK
 
 #include "vector3d.h"
+#include "vector2d.h"
 
 void Vector3D_set(Vector3D* const p_this, const Vector3D* p_vec)
 {
@@ -65,4 +66,10 @@ void Vector3D_sub(Vector3D* const p_this, const Vector3D* p_vec)
 	p_this->x -= p_vec->x;
 	p_this->y -= p_vec->y;
 	p_this->z -= p_vec->z;
+}
+
+void Vector3D_to_Vector2D(const Vector3D* this, Vector2D* const vec)
+{
+	vec->x = this->x;
+	vec->y = this->y;
 }

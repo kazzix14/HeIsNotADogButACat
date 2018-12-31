@@ -29,9 +29,9 @@ typedef struct grid3d
 	struct private_variables* pv;	
 } Grid3D;
 
-Grid3D* Grid3D_new();
+Grid3D* Grid3D_new(unsigned int, unsigned int, unsigned int);
 void Grid3D_release(Grid3D* const);
-void Grid3D_put(const Grid3D*);
+void Grid3D_put(const Grid3D*, const unsigned int, const View*);
 void Grid3D_set_Block2D(Grid3D* const, const unsigned int, const unsigned int, const unsigned int, Block2D* const);
 
 #endif

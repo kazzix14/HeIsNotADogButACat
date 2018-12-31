@@ -18,8 +18,8 @@ typedef struct view
 	Vector3D position,
 		 traget_position,
 		 up_vetor;
-	int screen_width,
-	    screen_height;
+	int window_width,
+	    window_height;
 	struct private_variables* p_vars;	
 } View;
 
@@ -28,4 +28,5 @@ void View_release(View* const);
 void View_begin_2d(const View*);
 void View_begin_3d(const View*);
 void View_end();
+char View_is_visible_2d(const View*, const Vector2D*);
 #endif

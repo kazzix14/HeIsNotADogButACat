@@ -9,6 +9,7 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <stdbool.h>
 #include <GL/glut.h>
 
 #include "view.h"
@@ -39,8 +40,8 @@ void View_begin_2d(const View* p_this)
 	glMatrixMode(GL_PROJECTION);
 	glPushMatrix();
 	glLoadIdentity();
-	gluOrtho2D(p_this->position.x, p_this->position.x+p_this->window_width,
-		   p_this->position.y+p_this->window_height, p_this->position.y);
+	gluOrtho2D(p_this->position.x, p_this->position.x+p_this->windows_width,
+		   p_this->position.y+p_this->windows_height, p_this->position.y);
 
 	//glScaled(1, -1, 1);
 	//glTranslated(0, -h, 0.0);
@@ -77,17 +78,17 @@ void View_end()
 	glPopMatrix();
 }
 
-char View_is_visible_2d(const View* this, const Vector2D* vec1)
+bool View_is_visible_2d(const View* this, const Vector2D* vec1)
 {
 	Vector2D vec2;
-       	Vector3D_to_Vector2D(&this->position, &vec2);
+       	Vector3D_to_Vector2D(this->position, &vec2);
 	if(Vector2D_compare(vec1, &vec2) == 0x2){ 				// LB 0010
 		if(Vector2D_compare(vec1, &vec2) == 0x2){ 			// 0010
-
 			if(Vector2D_compare(vec1, &vec2) == 0x2){ 		// 0010
-
 				if(Vector2D_compare(vec1, &vec2) == 0x2){ 	// 0010
 
 	}	}	}	}			
-	return 1;
+	gluOrtho2D(p_this->position.x, p_this->position.x+p_this->window_width,
+		   p_this->position.y+p_this->window_height, p_this->position.y);
+	return true;
 }
