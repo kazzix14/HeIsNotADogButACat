@@ -69,6 +69,14 @@ void View_begin_3d(const View* p_this)
 		  0.0, 1.0, 0.0);
 }
 
+void View_begin()
+{
+	glMatrixMode(GL_PROJECTION);
+	glPushMatrix();
+	glMatrixMode(GL_MODELVIEW);
+	glPushMatrix();
+}
+
 void View_end()
 {
 	glMatrixMode(GL_PROJECTION);

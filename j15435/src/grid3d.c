@@ -105,11 +105,11 @@ void Grid3D_put(const Grid3D* this, const unsigned int d, const View* view)
 					continue;
 				if( view->position.y <= (j+1)*BLOCK2D_IMAGE_SIZE )
 				{
-					glPushMatrix();
-					glLoadIdentity();
-					glTranslated(i*BLOCK2D_IMAGE_SIZE, j*BLOCK2D_IMAGE_SIZE, 0.0);
-					Block2D_put(this->pv->blk[i][j][d]);
-					glPopMatrix();
+					View_begin();
+						glLoadIdentity();
+						glTranslated(i*BLOCK2D_IMAGE_SIZE, j*BLOCK2D_IMAGE_SIZE, 0.0);
+						Block2D_put(this->pv->blk[i][j][d]);
+					View_end();
 				}
 			}
 		}

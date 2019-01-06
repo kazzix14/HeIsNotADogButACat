@@ -19,6 +19,7 @@ Transform2D* Transform2D_new()
 {
 	Transform2D* p_t;
 	p_t = (Transform2D*)malloc(sizeof(Transform2D));
+	Transform2D_set_default(p_t);
 	return p_t;
 }	
 

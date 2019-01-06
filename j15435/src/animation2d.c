@@ -66,7 +66,6 @@ void Animation2D_load(Animation2D* const p_this, const char* path_dir, const int
 		snprintf(path, ANIMATION2D_LOAD_PATH_LIMIT, "%s/%d.png", path_dir, i);
 		Image2D_load(p_this->pv->p_imgs[i], path);
 
-		Transform2D_set_default(p_this->pv->p_imgs[i]->p_transform);
 		p_this->pv->p_imgs[i]->option = IMAGE2D_CENTER;
 	}
 	p_this->pv->anim_length = num;
@@ -88,12 +87,12 @@ void Animation2D_set_frame_length(Animation2D* const p_this, const unsigned int 
 
 void Animation2D_play(const Animation2D* p_this)
 {
-	Transform2D* t = p_this->transform;
-	glTranslated(t->position.x, t->position.y, 0.0f);
-	glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
-	glScaled(t->scale.x, t->scale.y, 1.0f);
+		Transform2D* t = p_this->transform;
+		glTranslated(t->position.x, t->position.y, 0.0f);
+		glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
+		glScaled(t->scale.x, t->scale.y, 1.0f);
 
-	Image2D_put(p_this->pv->p_imgs[p_this->pv->current_frame/p_this->pv->frame_length]);	
+		Image2D_put(p_this->pv->p_imgs[p_this->pv->current_frame/p_this->pv->frame_length]);	
 
 	if(p_this->pv->current_frame == p_this->pv->anim_length*p_this->pv->frame_length-1)
 		p_this->pv->current_frame = 0;

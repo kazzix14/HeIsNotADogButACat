@@ -27,6 +27,7 @@ View* View_new();
 void View_release(View* const);
 void View_begin_2d(const View*);
 void View_begin_3d(const View*);
+void View_begin();
 void View_end();
 char View_is_visible_2d(const View*, const Vector2D*);
 #endif

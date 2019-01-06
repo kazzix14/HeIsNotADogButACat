@@ -55,12 +55,14 @@ void Object_set_AnimationController2D(Object* const p_this, AnimationController2
 
 void Object_play_AnimationController2D(const Object* p_this)
 {
-	Transform2D* t = p_this->transform;
-	glTranslated(t->position.x, t->position.y, 0.0f);
-	glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
-	glScaled(t->scale.x, t->scale.y, 1.0f);
+	View_begin();
+		Transform2D* t = p_this->transform;
+		glTranslated(t->position.x, t->position.y, 0.0f);
+		glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
+		glScaled(t->scale.x, t->scale.y, 1.0f);
 	
-	AnimationController2D_play(p_this->pv->p_ac);
+		AnimationController2D_play(p_this->pv->p_ac);
+	View_end();
 }
 
 void Object_release(Object* const p_this)

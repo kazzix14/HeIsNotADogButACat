@@ -46,7 +46,7 @@ AnimationController2D* AnimationController2D_new()
 	return p_anmcnt;
 }
 
-// sharing a animation object among some animation controllers may cause a problem
+// sharing a animation object among animation controllers may cause a problem
 void AnimationController2D_add_animation(AnimationController2D* p_this, Animation2D* const p_anim, const char* name)
 {
 	// allocate memory
