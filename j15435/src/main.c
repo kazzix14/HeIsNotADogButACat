@@ -142,7 +142,7 @@ int main(int argc, char **argv)
 	Object_set_AnimationController2D(man, manAnimCnt);
 	Object_set_AnimationController2D(poop, poopAnimCnt);
 
-	poop_audio = Audio_new(10);
+	poop_audio = Audio_new(16);
 	Audio_load(poop_audio, "unko.wav");
 
 	glutTimerFunc(0, timer, 0);
@@ -170,8 +170,8 @@ void display(void)
 
 void timer(int value)
 {
-	// !60 fps
-	glutTimerFunc(1, timer, 0);
+	// 60 fps
+	glutTimerFunc(16, timer, 0);
 	glutPostRedisplay();
 }
 
@@ -243,14 +243,14 @@ void keyboard()
 	if(Keyboard_is_pressed('h'))
 		view->position.x -= 10;
 	if(Keyboard_is_pressed('j'))
-		view->position.x += 10;
-	if(Keyboard_is_pressed('k'))
 		view->position.y += 10;
-	if(Keyboard_is_pressed('l'))
+	if(Keyboard_is_pressed('k'))
 		view->position.y -= 10;
+	if(Keyboard_is_pressed('l'))
+		view->position.x += 10;
 	// esc
 	if(Keyboard_is_pressed('\033'))
-		;//exit(0);
+		exit(0);
 	// man
 	if(Keyboard_is_pressed('f'))
 	{
@@ -259,24 +259,29 @@ void keyboard()
 		poop->transform->position.x = man->transform->position.x+40;
 		poop->transform->position.y = man->transform->position.y+60;
 	}
-	if(Keyboard_is_pressed('w'))
+	else if(Keyboard_is_pressed('w'))
 	{
 		AnimationController2D_switch(manAnimCnt, "up");
 		man->transform->position.y -= 5;
 	}
-	if(Keyboard_is_pressed('a'))
+	else if(Keyboard_is_pressed('a'))
 	{
 		AnimationController2D_switch(manAnimCnt, "left");
 		man->transform->position.x -= 5;
 	}
-	if(Keyboard_is_pressed('s'))
+	else if(Keyboard_is_pressed('s'))
 	{
 		AnimationController2D_switch(manAnimCnt, "down");
 		man->transform->position.y += 5;
 	}
-	if(Keyboard_is_pressed('d'))
+	else if(Keyboard_is_pressed('d'))
 	{
 		AnimationController2D_switch(manAnimCnt, "right");
 		man->transform->position.x += 5;
 	}
+	else
+	{
+		AnimationController2D_switch(manAnimCnt, "idle");
+	}
+
 }

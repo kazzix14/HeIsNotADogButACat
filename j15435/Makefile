@@ -35,7 +35,7 @@ LDFLAGS    := $(addprefix -l, $(LIBS))	\
 DEBUG_FLAGS   := -g3 -O0 -DDEBUG
 RELEASE_FLAGS := -O2 -s
 
-GENDEP  = $(CC) $^ -MM -MP | sed -e 's/\(.*\.o\)/$(OBJDIR)\/\1/g' >> $@
+GENDEP  = $(CC) $^ -MM -MP | sed -e 's/\(.*\.o\)/$(OBJDIR)\/\1/g' > $@
 COMPILE = $(CC) -c $< -o $@ $(CCFLAGS)
 LINK    = $(LD) $^ -o $@ $(LDFLAGS)
 

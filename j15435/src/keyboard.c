@@ -18,14 +18,12 @@
 static void down(unsigned char, int, int);
 static void up(unsigned char, int, int);
 
-static bool keydownflag[sizeof(char)];
+static bool keydownflag[128] = {};
 
 void Keyboard_init()
 {
 	glutKeyboardFunc(down);
 	glutKeyboardUpFunc(up);
-	for(int i = 0; i < sizeof(char); i++)
-		keydownflag[i] = false;
 }
 
 bool Keyboard_is_pressed(unsigned char key)
@@ -40,8 +38,8 @@ static void down(unsigned char key, int x, int y)
 		keydownflag[key + 32] = 1;
 	else
 		keydownflag[key] = 1;
+
 	DP("Key %d is pressed\n", key);
-	DP("ESC is %s\n", keydownflag[27] ? "pressed" : "not pressed");
 }
 
 static void up(unsigned char key, int x, int y)
@@ -51,6 +49,6 @@ static void up(unsigned char key, int x, int y)
 		keydownflag[key + 32] = 0;
 	else
 		keydownflag[key] = 0;
+
 	DP("Key %d is released\n", key);
-	DP("ESC is %s\n", keydownflag[27] ? "pressed" : "not pressed");
 }
