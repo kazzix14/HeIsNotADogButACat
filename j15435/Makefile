@@ -32,7 +32,7 @@ CCFLAGS    := -Wall       \
 LDFLAGS    := $(addprefix -l, $(LIBS))	\
 	      -L.
 
-DEBUG_FLAGS   := -g3 -O0
+DEBUG_FLAGS   := -g3 -O0 -DDEBUG
 RELEASE_FLAGS := -O2 -s
 
 GENDEP  = $(CC) $^ -MM -MP | sed -e 's/\(.*\.o\)/$(OBJDIR)\/\1/g' >> $@

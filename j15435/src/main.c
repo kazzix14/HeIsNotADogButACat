@@ -28,6 +28,7 @@
 #include "grid3d.h"
 #include "object.h"
 #include "audio.h"
+#include "debug.h"
 
 void display(void);
 void reshape(int, int);
@@ -62,7 +63,6 @@ Grid3D* grid;
 Audio* poop_audio;
 int main(int argc, char **argv)
 {
-
 	Audio* bgm = Audio_new(1);
 	Audio_load(bgm, "cfg.wav");
 	Audio_play(bgm);
@@ -169,8 +169,8 @@ void display(void)
 
 void timer(int value)
 {
-	// 60 fps
-	glutTimerFunc(16, timer, 0);
+	// !60 fps
+	glutTimerFunc(1, timer, 0);
 	glutPostRedisplay();
 }
 

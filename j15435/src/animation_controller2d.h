@@ -14,11 +14,7 @@
 #define ANIMATION_CONTROLLER2D_TYPE_ID 9711599
 #define ANIMATION_CONTROLLER2D_ANIMATION_NAME_LIMIT 32
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
 #include "transform2d.h"
-#include "view.h"
 #include "vector2d.h"
 #include "animation2d.h"
 

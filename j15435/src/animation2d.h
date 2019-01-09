@@ -14,11 +14,7 @@
 #define ANIMATION2D_TYPE_ID 97115
 #define ANIMATION2D_LOAD_PATH_LIMIT 256
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
 #include "transform2d.h"
-#include "view.h"
 #include "vector2d.h"
  
 struct private_variables;

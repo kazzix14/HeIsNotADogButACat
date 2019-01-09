@@ -9,13 +9,8 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
 #include "transform2d.h"
 #include "image2d.h"
-#include "vector2d.h"
-#include "view.h"
 #include "animation2d.h"
 
 static void release_images(Animation2D* const, const int, const int);
