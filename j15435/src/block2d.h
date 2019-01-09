@@ -10,20 +10,11 @@
 #ifndef BLOCK2D_H
 #define BLOCK2D_H
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
 // blk2 -> 098 108 107 050 -> 9818175
 #define BLOCK2D_TYPE_ID 9818175
 
 #define BLOCK2D_IMAGE_SIZE 32
 
-#include "transform2d.h"
-#include "view.h"
-#include "vector2d.h"
-#include "image2d.h"
-#include "animation_controller2d.h"
- 
 struct private_variables;
 typedef struct block2d
 {

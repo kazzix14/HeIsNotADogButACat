@@ -13,12 +13,7 @@
 // obj -> 111 098 106 -> 1119816
 #define OBJECT_TYPE_ID 1119816
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
 #include "transform2d.h"
-#include "view.h"
-#include "vector2d.h"
 #include "image2d.h"
 #include "animation_controller2d.h"
  

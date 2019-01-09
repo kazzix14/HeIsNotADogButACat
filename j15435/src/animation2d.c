@@ -9,6 +9,8 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <stdio.h>
+
 #include "transform2d.h"
 #include "image2d.h"
 #include "animation2d.h"

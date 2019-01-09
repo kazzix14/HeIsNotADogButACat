@@ -19,8 +19,7 @@
 #include <GL/glpng.h>
 
 #include "transform2d.h"
-#include "view.h"
-#include "vector2d.h"
+#include "vector4d.h"
  
 struct private_variables;
 typedef struct image2d

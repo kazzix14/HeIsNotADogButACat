@@ -9,8 +9,8 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
-#include "vector3d.h"
 #include "vector2d.h"
+#include "vector3d.h"
 
 void Vector3D_set(Vector3D* const p_this, const Vector3D* p_vec)
 {

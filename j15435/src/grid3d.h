@@ -13,14 +13,7 @@
 // blk -> 098 108 107 -> 981817
 #define BLOCK_TYPE_ID 981817
 
-#include <GL/glut.h>
-#include <GL/glpng.h>
-
-#include "transform2d.h"
 #include "view.h"
-#include "vector2d.h"
-#include "image2d.h"
-#include "animation_controller2d.h"
 #include "block2d.h"
 
 struct private_variables;

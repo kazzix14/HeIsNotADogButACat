@@ -29,6 +29,7 @@
 #include "object.h"
 #include "audio.h"
 #include "debug.h"
+#include "keyboard.h"
 
 void display(void);
 void reshape(int, int);
@@ -42,8 +43,7 @@ void* init(void*);
 void fps();
 void init_gl(int*, char**, GLuint, GLuint, char*);
 void mouse(int, int, int, int);
-void keyboardUp(unsigned char, int, int);
-void keyboardDown(unsigned char, int, int);
+void keyboard();
 
 View* view;
 Object *man;
@@ -66,7 +66,7 @@ int main(int argc, char **argv)
 	Audio* bgm = Audio_new(1);
 	Audio_load(bgm, "cfg.wav");
 	Audio_play(bgm);
-	init_gl(&argc, argv, 2560, 1440, "UNTI!!");
+	init_gl(&argc, argv, 1600, 900, "UNTI!!");
 	view = View_new();
 
 	Vector3D_set_zero(&(view->position));
@@ -160,6 +160,7 @@ void display(void)
 			Object_play_AnimationController2D(man);
 			Object_play_AnimationController2D(poop);
 	View_end();
+	keyboard();
 
 	fps();
 
@@ -204,8 +205,7 @@ void init_gl(int *argc, char **argv, GLuint width, GLuint height, char *title)
 	glutDisplayFunc(display);
 	glutReshapeFunc(reshape);
 	glutMouseFunc(mouse);
-	glutKeyboardFunc(keyboardDown);
-	glutKeyboardUpFunc(keyboardUp);
+	Keyboard_init();
 }
 
 void *init(void* argp)
@@ -225,7 +225,7 @@ void fps()
 	tc = (double)tv.tv_sec + (double)tv.tv_usec * 1.e-6;
 	if(tc - ts >= 1.0)
 	{
-		printf("%d\n", count);
+		DP("%d\n", count);
 		ts = tc;
 		count = 0;
 	}
@@ -237,74 +237,46 @@ void mouse(int b, int s, int x, int y)
 
 }
 
-void keyboardDown(unsigned char key, int x, int y)
+void keyboard()
 {
 	// camera
-	if((key == 'k'))
-		view->position.y -= 10;
-	if((key == 'h'))
+	if(Keyboard_is_pressed('h'))
 		view->position.x -= 10;
-	if((key == 'j'))
-		view->position.y += 10;
-	if((key == 'l'))
+	if(Keyboard_is_pressed('j'))
 		view->position.x += 10;
+	if(Keyboard_is_pressed('k'))
+		view->position.y += 10;
+	if(Keyboard_is_pressed('l'))
+		view->position.y -= 10;
 	// esc
-	if((key == 27))
-		exit(0);
+	if(Keyboard_is_pressed('\033'))
+		;//exit(0);
 	// man
-	if((key == 'f'))
+	if(Keyboard_is_pressed('f'))
 	{
 		AnimationController2D_switch(manAnimCnt, "poop");
 		Audio_play(poop_audio);
 		poop->transform->position.x = man->transform->position.x+40;
 		poop->transform->position.y = man->transform->position.y+60;
 	}
-	else if((key == 'w'))
+	if(Keyboard_is_pressed('w'))
 	{
 		AnimationController2D_switch(manAnimCnt, "up");
 		man->transform->position.y -= 5;
 	}
-	else if((key == 'a'))
+	if(Keyboard_is_pressed('a'))
 	{
 		AnimationController2D_switch(manAnimCnt, "left");
 		man->transform->position.x -= 5;
 	}
-	else if((key == 's'))
+	if(Keyboard_is_pressed('s'))
 	{
 		AnimationController2D_switch(manAnimCnt, "down");
 		man->transform->position.y += 5;
 	}
-	else if((key == 'd'))
+	if(Keyboard_is_pressed('d'))
 	{
 		AnimationController2D_switch(manAnimCnt, "right");
 		man->transform->position.x += 5;
-	}
-}
-
-void keyboardUp(unsigned char key, int x, int y)
-{
-	// man
-	if((key == 'f'))
-	{
-		Sleep(600);
-		AnimationController2D_switch(manAnimCnt, "idle");
-		poop->transform->position.x = view->position.x + 10000;
-		poop->transform->position.y = view->position.y + 10000;
-	}
-	else if((key == 'w'))
-	{
-		AnimationController2D_switch(manAnimCnt, "idle");
-	}
-	else if((key == 'a'))
-	{
-		AnimationController2D_switch(manAnimCnt, "idle");
-	}
-	else if((key == 's'))
-	{
-		AnimationController2D_switch(manAnimCnt, "idle");
-	}
-	else if((key == 'd'))
-	{
-		AnimationController2D_switch(manAnimCnt, "idle");
 	}
 }

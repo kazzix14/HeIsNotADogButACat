@@ -14,8 +14,6 @@
 
 #include "transform2d.h"
 #include "image2d.h"
-#include "vector2d.h"
-#include "view.h"
 
 struct private_variables
 {

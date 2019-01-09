@@ -8,14 +8,9 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
-#include <GL/glpng.h>
-
 #include "transform2d.h"
 #include "block2d.h"
-#include "vector2d.h"
-#include "view.h"
 #include "image2d.h"
-#include "animation_controller2d.h"
 
 struct private_variables
 {
