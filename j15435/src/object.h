@@ -13,20 +13,22 @@
 // obj -> 111 098 106 -> 1119816
 #define OBJECT_TYPE_ID 1119816
 
+#include "everytypeneedtohaveapointertothisstructattheheadofthestruct.h"
 #include "transform2d.h"
-#include "image2d.h"
-#include "animation_controller2d.h"
- 
+
 struct private_variables;
 typedef struct object
 {
+	struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct* pEtnthapttsathots;
 	Transform2D* transform;
 	struct private_variables* pv;	
 } Object;
 
 Object* Object_new();
-void Object_set_Image2D(Object* const, Image2D* const);
-void Object_set_AnimationController2D(Object* const, AnimationController2D* const);
+void Object_add_component(Object* const, void* const);
+void Object_set_valid(Object* const);
+void Object_set_invalid(Object* const);
+void Object_put(const Object*);
 void Object_play_AnimationController2D(const Object*);
 void Object_release(Object* const);
 

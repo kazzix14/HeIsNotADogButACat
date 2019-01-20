@@ -12,8 +12,16 @@
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
+#include "everytypeneedtohaveapointertothisstructattheheadofthestruct.h"
+#include "debug.h"
 #include "transform2d.h"
 #include "image2d.h"
+
+static struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct etnthapttsathots =
+{
+	.isVisible = true,
+	.putFunc = (void*)Image2D_put
+};
 
 struct private_variables
 {
@@ -28,6 +36,8 @@ Image2D* Image2D_new()
 	p_img = (Image2D*)malloc(sizeof(Image2D));
 	p_img->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
 	p_img->p_transform = Transform2D_new();
+	p_img->pEtnthapttsathots = &etnthapttsathots;
+
 	p_img->option = IMAGE2D_TOP_LEFT;
 	p_img->color.x = 255;
 	p_img->color.y = 255;
@@ -47,15 +57,16 @@ void Image2D_release(Image2D* const p_this)
 	free(p_this);
 }
 
-void Image2D_load(Image2D* const p_this, const char* path)
+void Image2D_load(Image2D* const this, const char* path)
 {
-	p_this->p_vars->img = pngBind(path, 
+	this->p_vars->img = pngBind(path, 
 					PNG_NOMIPMAP,
 					PNG_ALPHA,
-					&(p_this->p_vars->info),
+					&(this->p_vars->info),
 					GL_CLAMP,
 					GL_NEAREST,
 					GL_NEAREST);
+	DEIF(this->p_vars->img == 0,"failed to load image: \"%s\"\n", path);
 }
 
 void Image2D_put(const Image2D* p_this)

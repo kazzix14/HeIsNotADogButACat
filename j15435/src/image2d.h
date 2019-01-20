@@ -18,12 +18,14 @@
 #include <GL/glut.h>
 #include <GL/glpng.h>
 
+#include "everytypeneedtohaveapointertothisstructattheheadofthestruct.h"
 #include "transform2d.h"
 #include "vector4d.h"
  
 struct private_variables;
 typedef struct image2d
 {
+	struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct* pEtnthapttsathots;
 	Transform2D* p_transform;	
 	int option;
 	Vector4D color;

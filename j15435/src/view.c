@@ -24,6 +24,7 @@ View* View_new()
 	View *v;
 	v = (View*)malloc(sizeof(View));
 	v->p_vars = (struct private_variables*)malloc(sizeof(struct private_variables));
+	Vector3D_set_zero(&(v->position));
 	
 	return v;
 }

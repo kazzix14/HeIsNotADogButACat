@@ -8,16 +8,28 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <stdlib.h>
+#include <stdbool.h>
+
+#include <GL/gl.h>
+
+#include "everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct.h"
 #include "transform2d.h"
 #include "object.h"
-#include "image2d.h"
 #include "view.h"
-#include "animation_controller2d.h"
+
+static struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct etnthapttsathots =
+{
+	.isVisible = true,
+	.putFunc = (void*)Object_put
+};
+
 
 struct private_variables
 {
-	Image2D* p_img;
-	AnimationController2D* p_ac;
+	void** components;
+	unsigned int componentNum;
+	bool isValid;
 };
 
 Object* Object_new()
@@ -28,37 +40,59 @@ Object* Object_new()
 	p_obj = (Object*)malloc(sizeof(Object));
 	p_obj->transform = Transform2D_new();
 	p_obj->pv = (struct private_variables*)malloc(sizeof(struct private_variables));
-	p_obj->pv->p_img = Image2D_new();
-	p_obj->pv->p_ac = AnimationController2D_new();
+	p_obj->pv->components = (void**)malloc(sizeof(void*) * 1);
 
-	if( p_obj	     == NULL ||
-	    p_obj->pv	     == NULL ||
-	    p_obj->pv->p_img == NULL ||
-	    p_obj->pv->p_ac  == NULL )
+	p_obj->pEtnthapttsathots = &etnthapttsathots;
+	p_obj->pv->isValid = true;
+	p_obj->pv->componentNum = 0;
+
+	if( p_obj	     	  == NULL ||
+	    p_obj->pv	     	  == NULL ||
+	    p_obj->pv->components == NULL)
 		return NULL;
 
 	return p_obj;
 }
 
-void Object_set_Image2D(Object* const p_this, Image2D* const p_img)
+void Object_add_component(Object* const this, void* const newComponent)
 {
-	p_this->pv->p_img = p_img;
+	this->pv->components = (void**)realloc(this->pv->components, sizeof(void*) * (this->pv->componentNum+1));
+	this->pv->components[this->pv->componentNum] = newComponent;
+	this->pv->componentNum++;
 }
 
-void Object_set_AnimationController2D(Object* const p_this, AnimationController2D* const p_ac)
+void Object_set_valid(Object* const this)
 {
-	p_this->pv->p_ac = p_ac;
+	this->pv->isValid = true;
 }
 
-void Object_play_AnimationController2D(const Object* p_this)
+void Object_set_invalid(Object* const this)
+{
+	this->pv->isValid = false;
+}
+
+void Object_put(const Object* this)
 {
 	View_begin();
-		Transform2D* t = p_this->transform;
+
+		Transform2D* t = this->transform;
 		glTranslated(t->position.x, t->position.y, 0.0f);
 		glRotated(t->rotation.w, t->rotation.x, t->rotation.y, t->rotation.z);
 		glScaled(t->scale.x, t->scale.y, 1.0f);
-	
-		AnimationController2D_play(p_this->pv->p_ac);
+		
+		// call putFunc() of every component if it is visible
+		if(this->pv->isValid == false) return;
+		for(int i = 0; i < this->pv->componentNum; i++)
+		{
+			// first member  : bool isVisible
+			// second member : void (putFunc*)(void *)
+			struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct* s;
+			s = (struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct*)(*((void **)(this->pv->components[i])));
+			if(s->isVisible == true)
+			{
+				s->putFunc(this->pv->components[i]);
+			}
+		}
 	View_end();
 }
 

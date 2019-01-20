@@ -12,11 +12,15 @@
 #include <stdio.h>
 
 #ifdef DEBUG
-	#define DP(fmt, args...) fprintf(stdout, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args)
+	#define DP(fmt, args...) fprintf(stdout, fmt, ##args)
+	#define DPIF(condition, fmt, args...) if(condition)fprintf(stderr, fmt, ##args)
 	#define DE(fmt, args...) fprintf(stderr, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args)
+	#define DEIF(condition, fmt, args...) if(condition)fprintf(stderr, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args)
 #else
 	#define DP(fmt, args...)
+	#define DPIF(fmt, args...)
 	#define DE(fmt, args...)
+	#define DEIF(fmt, args...)
 #endif
 
 #endif
