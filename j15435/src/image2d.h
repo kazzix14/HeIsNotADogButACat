@@ -41,7 +41,7 @@ void Image2D_put_at(const Image2D*, const Vector2D*);
 void Image2D_get_info(const Image2D*, pngInfo* const);
 void Image2D_get_id(const Image2D*, GLuint* const);
 void Image2D_get_size(const Image2D*, Vector2D* const);
-void Image2D_get_size_x(const Image2D*, int* const);
-void Image2D_get_size_y(const Image2D*, int* const);
+void Image2D_get_width(const Image2D*, int* const);
+void Image2D_get_height(const Image2D*, int* const);
 
 #endif

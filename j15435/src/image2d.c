@@ -144,12 +144,12 @@ void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)
 	p_rtrn->y =  p_this->p_vars->info.Height;
 }
 
-void Image2D_get_size_x(const Image2D* p_this, int* const p_rtrn)
+void Image2D_get_width(const Image2D* p_this, int* const p_rtrn)
 {
 	*p_rtrn = p_this->p_vars->info.Width;
 }
 
-void Image2D_get_size_y(const Image2D* p_this, int* const p_rtrn)
+void Image2D_get_height(const Image2D* p_this, int* const p_rtrn)
 {
 	*p_rtrn = p_this->p_vars->info.Height;
 }
