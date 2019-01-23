@@ -10,9 +10,6 @@
 #ifndef VECTOR3D_H
 #define VECTOR3D_H
 
-// vec3 ascii
-#define VECTOR3D_TYPE_ID 118119951
-
 #include "vector2d.h"
 
 typedef struct vector3d

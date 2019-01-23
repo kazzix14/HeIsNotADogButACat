@@ -1,7 +1,7 @@
 /* 
  * vector2d.h
  *
- * (C) 2018 Kazuma Murata
+ * (C) 2019 Kazuma Murata
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -20,11 +20,13 @@ typedef struct vector2d
 
 void Vector2D_set(Vector2D* const, const Vector2D* );
 void Vector2D_set_zero(Vector2D* const);
-void Vector2D_set_identity(Vector2D* const);
+void Vector2D_set_one(Vector2D* const);
 void Vector2D_set_unit_x(Vector2D* const);
 void Vector2D_set_unit_y(Vector2D* const);
+void Vector2D_normalize(Vector2D* const);
 void Vector2D_add(Vector2D* const, const Vector2D*);
 void Vector2D_sub(Vector2D* const, const Vector2D*);
+void Vector2D_dot(const Vector2D*, const Vector2D*, double* const);
 char Vector2D_compare(const Vector2D*, const Vector2D*);
 
 #endif

@@ -64,14 +64,29 @@ int main(int argc, char **argv)
 	img = Image2D_new();
 	Image2D_load(img, "resource/animation/test/0.png");
 
-	anm2d = Animation2D_new();
-	Animation2D_load(anm2d, "resource/animation/run_test", 6);
-
 	obj = Object_new();
 	obj_child = Object_new();
+	anm2d = Animation2D_new();
+
 	Object_add_component(obj, obj_child);
+	Object_add_component(obj, anm2d);
 	Object_add_component(obj_child, img);
-	Object_add_component(obj_child, anm2d);
+
+	Animation2D_add_frame(anm2d);
+	Animation2D_set_frame_length(anm2d, 0, 1);
+	// anm, frame index, varaddr, valaddr, sizeofval, smoothingType
+	typeof(obj_child->transform->position.y) valtest = 50;
+	Animation2D_add_animated_variable(anm2d, 0, &(obj_child->transform->position.y), &valtest, sizeof(obj_child->transform->position.y), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	valtest = 20;
+	Animation2D_add_animated_variable(anm2d, 0, &(obj_child->transform->rotation.w), &valtest, sizeof(obj_child->transform->position.x), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	Animation2D_add_frame(anm2d);
+	Animation2D_set_frame_length(anm2d, 1, 1);
+	// anm, frame index, varaddr, valaddr, sizeofval, smoothingType
+	valtest = 0;
+	Animation2D_add_animated_variable(anm2d, 1, &(obj_child->transform->position.y), &valtest, sizeof(obj_child->transform->position.y), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	valtest = 120;
+	Animation2D_add_animated_variable(anm2d, 1, &(obj_child->transform->rotation.w), &valtest, sizeof(obj_child->transform->position.x), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 
 	obj->transform->rotation.z = 1;
 	obj_child->transform->rotation.z = 1;

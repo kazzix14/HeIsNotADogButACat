@@ -38,6 +38,6 @@ void Transform2D_set(Transform2D* const p_this, const Transform2D* p_oprnd)
 void Transform2D_set_default(Transform2D* const p_this)
 {
 	Vector2D_set_zero(&(p_this->position));
-	Vector2D_set_identity(&(p_this->scale));
+	Vector2D_set_one(&(p_this->scale));
 	Vector4D_set_zero(&(p_this->rotation));
 }

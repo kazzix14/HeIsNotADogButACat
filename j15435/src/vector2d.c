@@ -1,7 +1,7 @@
 /* 
  * vector2d.c
  *
- * (C) 2018 Kazuma Murata
+ * (C) 2019 Kazuma Murata
  * 
  * This Source Code Form is subject to the terms of the Mozilla Public
  * License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -23,11 +23,12 @@ void Vector2D_set_zero(Vector2D* const p_this)
 	p_this->y = 0.0;
 }
 
-void Vector2D_set_identity(Vector2D* const p_this)
+void Vector2D_set_one(Vector2D* const p_this)
 {
 	p_this->x = 1.0;
 	p_this->y = 1.0;
 }
+
 void Vector2D_set_unit_x(Vector2D* const p_this)
 {
 	p_this->x = 1.0;
@@ -40,6 +41,13 @@ void Vector2D_set_unit_y(Vector2D* const p_this)
 	p_this->y = 1.0;
 }
 
+void Vector2D_normalize(Vector2D* const v)
+{
+	double va = (v->x*v->x + v->y*v->y);
+	v->x = v->x / va;
+	v->y = v->y / va;
+}
+
 void Vector2D_add(Vector2D* const p_this, const Vector2D* p_vec)
 {
 	p_this->x += p_vec->x;
@@ -50,6 +58,11 @@ void Vector2D_sub(Vector2D* const p_this, const Vector2D* p_vec)
 {
 	p_this->x -= p_vec->x;
 	p_this->y -= p_vec->y;
+}
+
+void Vector2D_dot(const Vector2D* v1, const Vector2D* v2, double* const ret)
+{
+	*ret = v1->x * v2->x + v1->y * v2->y;
 }
 
 char Vector2D_compare(const Vector2D* v1, const Vector2D* v2)
