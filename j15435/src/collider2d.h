@@ -10,41 +10,53 @@
 #ifndef COLLIDER2D_H
 #define COLLIDER2D_H
 
-#define COLLIDER2D_COLLIDER_TYPE_POINT 0;
-#define COLLIDER2D_COLLIDER_TYPE_CIRCLE 1;
-#define COLLIDER2D_COLLIDER_TYPE_LINE 2;
-#define COLLIDER2D_COLLIDER_TYPE_RECT 3;
+#define COLLIDER2D_LAYER_BYTES 4
+#define COLLIDER2D_TAG_LENGTH 4
+
+#define COLLIDER2D_COLLIDER_POINT 0
+#define COLLIDER2D_COLLIDER_CIRCLE 1
+#define COLLIDER2D_COLLIDER_LINE 2
+#define COLLIDER2D_COLLIDER_RECT 3
 
 #include "vector2d.h"
 
 typedef struct collider2d
 {
-	void* collObj;
-	char layer[4]; // 8 bit * 4 : 32 layer
+	void* colObj;
+	void** colHits; // 
+	char tag[COLLIDER2D_TAG_LENGTH]; //
 } Collider2D;
 
-typedef struct rect
+typedef struct rectcollider
 {
-	char collType;
+	char colType;
 	Vector2D position; //
 	Vector2D vec1;
 	Vector2D vec2;
-} Rect;
+} RectCollider;
 
-typedef struct circle
+typedef struct circlecollider
 {
-	char collType;
+	char colType;
 	Vector2D position; //
 	double radius;
-} Circle;
+} CircleCollider;
 
-typedef struct point
+typedef struct pointcollider
 {
-	char collType;
+	char colType;
 	Vector2D position; //
-} Point;
+} PointCollider;
+
+typedef struct linecollider
+{
+	char colType;
+	Vector2D position; //
+} LineCollider;
 
 Collider2D* Collider2D_new();
 void Collider2D_set_collider_object(Collider2D* const, char);
+void Collider2D_register_collider(Collider2D* const);
+void Collider2D_register_collider_object(Collider2D* const, char);
 
 #endif
