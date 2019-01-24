@@ -20,6 +20,24 @@ Collider2D* Collider2D_new()
 
 void Collider2D_set_collider_object(Collider2D* const this, char ct)
 {
-	//switch()
-	//this->colObj = co;
+	switch(ct)
+	{
+		case COLLIDER2D_COLLIDER_TYPE_POINT:
+			this->collObj = (void*)malloc(sizeof(Point));
+			break;
+		case COLLIDER2D_COLLIDER_TYPE_CIRCLE:
+			this->collObj = (void*)malloc(sizeof(Circle));
+			break;
+		case COLLIDER2D_COLLIDER_TYPE_LINE:
+			this->collObj = (void*)malloc(sizeof(Line));
+			break;
+		case COLLIDER2D_COLLIDER_TYPE_RECT:
+			this->collObj = (void*)malloc(sizeof(Rect));
+			break;
+	}
+}
+
+void Collider2D_register_collider_object(Collider2D* const this)
+{
+
 }

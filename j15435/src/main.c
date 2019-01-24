@@ -51,6 +51,8 @@ View* view;
 Object *obj;
 Object *obj_child;
 Image2D* img;
+Image2D* img2;
+	Audio* audi;
 
 Animation2D* anm2d;
 
@@ -62,7 +64,11 @@ int main(int argc, char **argv)
 	view->position.z = 1;
 
 	img = Image2D_new();
+	img2 = Image2D_new();
+	audi = Audio_new(1);
+	Audio_load(audi, "test.wav");
 	Image2D_load(img, "resource/animation/test/0.png");
+	Image2D_load(img2, "resource/image/block/race/human/human_male.png");
 
 	obj = Object_new();
 	obj_child = Object_new();
@@ -71,9 +77,11 @@ int main(int argc, char **argv)
 	Object_add_component(obj, obj_child);
 	Object_add_component(obj, anm2d);
 	Object_add_component(obj_child, img);
+	Object_add_component(obj_child, img2);
+	Object_add_component(obj, img2);
 
 	Animation2D_add_frame(anm2d);
-	Animation2D_set_frame_length(anm2d, 0, 1);
+	Animation2D_set_frame_length(anm2d, 0, 10.676878);
 	// anm, frame index, varaddr, valaddr, sizeofval, smoothingType
 	typeof(obj_child->transform->position.y) valtest = 50;
 	Animation2D_add_animated_variable(anm2d, 0, &(obj_child->transform->position.y), &valtest, sizeof(obj_child->transform->position.y), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
@@ -197,4 +205,7 @@ void keyboard()
 		obj_child->transform->position.x -= 5;
 	if(Keyboard_is_pressed('l'))
 		obj_child->transform->position.x += 5;
+
+	if(Keyboard_is_pressed('f'))
+		Audio_play(audi);
 }

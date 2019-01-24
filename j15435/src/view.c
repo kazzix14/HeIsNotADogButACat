@@ -85,7 +85,7 @@ void View_end()
 	glMatrixMode(GL_MODELVIEW);
 	glPopMatrix();
 }
-
+/*
 char View_is_visible_2d(const View* this, const Vector2D* vec1)
 {
 	Vector2D vec2;
@@ -99,4 +99,4 @@ char View_is_visible_2d(const View* this, const Vector2D* vec1)
 
 	}	}	}	}			
 	return 1;
-}
+}*/
