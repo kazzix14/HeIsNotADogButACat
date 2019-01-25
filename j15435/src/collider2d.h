@@ -10,7 +10,7 @@
 #ifndef COLLIDER2D_H
 #define COLLIDER2D_H
 
-#define COLLIDER2D_LAYER_BYTES 4
+#define COLLIDER2D_LAYER_NUM 32
 #define COLLIDER2D_TAG_LENGTH 4
 
 #define COLLIDER2D_COLLIDER_POINT 0
@@ -22,8 +22,9 @@
 
 typedef struct collider2d
 {
+	struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct* pEtnthapttsathots;
 	void* colObj;
-	void** colHits; // 
+	void** objHits; // pointer to objects hit
 	char tag[COLLIDER2D_TAG_LENGTH]; //
 } Collider2D;
 
@@ -56,7 +57,8 @@ typedef struct linecollider
 
 Collider2D* Collider2D_new();
 void Collider2D_set_collider_object(Collider2D* const, char);
-void Collider2D_register_collider(Collider2D* const);
-void Collider2D_register_collider_object(Collider2D* const, char);
+void Collider2D_register_collider(Collider2D* const, int);
+void Collider2D_judge_all();
+void Collider2D_judge(Collider2D* const, Collider2D* const);
 
 #endif

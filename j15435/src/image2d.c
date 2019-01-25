@@ -11,6 +11,7 @@
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
+#include <stdbool.h>
 
 #include "everytypeneedtohaveapointertothisstructattheheadofthestruct.h"
 #include "debug.h"

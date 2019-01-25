@@ -31,6 +31,7 @@
 #include "audio.h"
 #include "debug.h"
 #include "keyboard.h"
+#include "collider2d.h"
 
 void display(void);
 void reshape(int, int);
@@ -52,7 +53,9 @@ Object *obj;
 Object *obj_child;
 Image2D* img;
 Image2D* img2;
-	Audio* audi;
+Audio* audi;
+Collider2D* col2d;
+
 
 Animation2D* anm2d;
 
@@ -65,10 +68,14 @@ int main(int argc, char **argv)
 
 	img = Image2D_new();
 	img2 = Image2D_new();
+	col2d = Collider2D_new();
 	audi = Audio_new(1);
+
 	Audio_load(audi, "test.wav");
 	Image2D_load(img, "resource/animation/test/0.png");
 	Image2D_load(img2, "resource/image/block/race/human/human_male.png");
+	Collider2D_set_collider_object(col2d, COLLIDER2D_COLLIDER_RECT);
+
 
 	obj = Object_new();
 	obj_child = Object_new();
@@ -79,6 +86,7 @@ int main(int argc, char **argv)
 	Object_add_component(obj_child, img);
 	Object_add_component(obj_child, img2);
 	Object_add_component(obj, img2);
+	//Object_add_component(obj_child, col2d);
 
 	Animation2D_add_frame(anm2d);
 	Animation2D_set_frame_length(anm2d, 0, 10.676878);
