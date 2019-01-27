@@ -20,7 +20,11 @@ typedef struct timer
 } Timer;
 
 Timer* Timer_new();
-void Timer_get_spf(double* const);
+void Timer_count(Timer* const);
+void Timer_get_count(Timer* const, double* const);
+void Timer_reset_count(Timer* const);
+void Timer_set_count(Timer* const, const double);
+void Timer_get_spf(Timer* const, double* const);
 void Timer_get_fps();
 
 #endif

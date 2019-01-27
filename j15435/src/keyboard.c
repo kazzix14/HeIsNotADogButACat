@@ -18,7 +18,9 @@
 static void down(unsigned char, int, int);
 static void up(unsigned char, int, int);
 
-static bool keydownflag[128] = {};
+static bool keydownflag[128] = {0};
+static char keypressed[32] ;
+static int keypressedhead = 0;
 
 void Keyboard_init()
 {
@@ -28,27 +30,69 @@ void Keyboard_init()
 
 bool Keyboard_is_pressed(unsigned char key)
 {
+	for(int i = 0; i < 32; i++)
+	{
+		if(keypressed[i] == key) return true;
+	}
+	return false;
+}
+
+bool Keyboard_is_down(unsigned char key)
+{
 	return keydownflag[key];
+}
+
+void Keyboard_update()
+{
+	for(int i = 0; i < 32; i++)
+	{
+		keypressed[i] = -1;
+	}
+	keypressedhead = 0;
 }
 
 static void down(unsigned char key, int x, int y)
 {
 	if('A' <= key && key <= 'Z')
+	{
 		// 'a' - 'A' == 32
-		keydownflag[key + 32] = 1;
+		if(keydownflag[key] == 0)
+		{
+			DPIF(true, "Key %d is pressed\n", key);
+			keypressed[keypressedhead++] = key+32;
+			keydownflag[key+32] = 1;
+		}
+	}
 	else
-		keydownflag[key] = 1;
+	{
+		if(keydownflag[key] == 0)
+		{
+			DPIF(true, "Key %d is pressed\n", key);
+			keypressed[keypressedhead++] = key;
+			keydownflag[key] = 1;
+		}
+	}
 
-	DP("Key %d is pressed\n", key);
 }
 
 static void up(unsigned char key, int x, int y)
 {
 	if('A' <= key && key <= 'Z')
+	{
 		// 'a' - 'A' == 32
-		keydownflag[key + 32] = 0;
+		if(keydownflag[key] == 1)
+		{
+			DPIF(true, "Key %d is released\n", key);
+			keydownflag[key+32] = 0;
+		}
+	}
 	else
-		keydownflag[key] = 0;
+	{
+		if(keydownflag[key] == 1)
+		{
+			DPIF(true, "Key %d is released\n", key);
+			keydownflag[key] = 0;
+		}
+	}
 
-	DP("Key %d is released\n", key);
 }

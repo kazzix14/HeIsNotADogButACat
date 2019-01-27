@@ -28,5 +28,6 @@ void Vector2D_add(Vector2D* const, const Vector2D*);
 void Vector2D_sub(Vector2D* const, const Vector2D*);
 void Vector2D_dot(const Vector2D*, const Vector2D*, double* const);
 char Vector2D_compare(const Vector2D*, const Vector2D*);
+char Vector2D_compare_zero(const Vector2D*);
 
 #endif

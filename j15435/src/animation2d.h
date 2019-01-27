@@ -16,6 +16,7 @@
 
 #define ANIMATION_NO_SMOOTHING 0
 #define ANIMATION_LINER_SMOOTHING_FOR_DOUBLE 1
+#define ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D 2
 
 #include "transform2d.h"
 #include "vector2d.h"

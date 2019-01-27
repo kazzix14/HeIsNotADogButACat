@@ -9,6 +9,8 @@
 
 #define GLUT_DISABLE_ATEXIT_HACK
 
+#include <math.h>
+
 #include "vector2d.h"
 
 void Vector2D_set(Vector2D* const p_this, const Vector2D* p_vec)
@@ -43,7 +45,7 @@ void Vector2D_set_unit_y(Vector2D* const p_this)
 
 void Vector2D_normalize(Vector2D* const v)
 {
-	double va = (v->x*v->x + v->y*v->y);
+	double va = sqrt(v->x*v->x + v->y*v->y);
 	v->x = v->x / va;
 	v->y = v->y / va;
 }
@@ -78,4 +80,19 @@ char Vector2D_compare(const Vector2D* v1, const Vector2D* v2)
 	 */
 	return ((v2->x < v1->x) - (v1->x < v2->x) + 1) &
 	       ((v2->y < v1->y) - (v1->x < v2->y) + 1) << 2;
+}
+
+char Vector2D_compare_zero(const Vector2D* v1)
+{
+	/* 
+	 * 1x < 2x -> 0000
+	 * 1x = 2x -> 0001
+	 * 1x > 2x -> 0010
+	 * OR
+	 * 1y < 2y -> 0000
+	 * 1y = 2y -> 0100
+	 * 1y > 2y -> 1000
+	 */
+	return ((0 < v1->x) - (v1->x < 0) + 1) &
+	       ((0 < v1->y) - (v1->x < 0) + 1) << 2;
 }

@@ -71,8 +71,14 @@ void Object_set_invalid(Object* const this)
 	this->pv->isValid = false;
 }
 
+void Object_is_valid(Object* const this, bool* const ret)
+{
+	*ret = this->pv->isValid;
+}
+
 void Object_put(const Object* this)
 {
+	if(this->pv->isValid == false) return;
 	View_begin();
 
 		Transform2D* t = this->transform;
@@ -81,7 +87,6 @@ void Object_put(const Object* this)
 		glScaled(t->scale.x, t->scale.y, 1.0f);
 		
 		// call putFunc() of every component if it is visible
-		if(this->pv->isValid == false) return;
 		for(int i = 0; i < this->pv->componentNum; i++)
 		{
 			// first member  : bool isVisible

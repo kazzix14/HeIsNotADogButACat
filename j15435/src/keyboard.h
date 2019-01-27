@@ -14,4 +14,6 @@
 
 void Keyboard_init();
 bool Keyboard_is_pressed(unsigned char);
+bool Keyboard_is_down(unsigned char);
+void Keyboard_update();
 #endif
