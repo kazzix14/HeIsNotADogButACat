@@ -39,5 +39,6 @@ void Animation2D_add_animated_variable(Animation2D* const, const unsigned int, v
 void Animation2D_play(Animation2D* const);
 void Animation2D_set_frame_time(Animation2D* const, const unsigned int, const unsigned int);
 void Animation2D_put_with_offset(const Animation2D*, const Vector2D*);
+void Animation2D_reset(Animation2D* const);
 
 #endif

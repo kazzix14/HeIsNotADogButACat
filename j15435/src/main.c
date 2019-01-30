@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <sys/time.h>
 #include <pthread.h>
@@ -37,17 +38,38 @@
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
 
-#define PLAYER_CHARACTER_DEFAULT_SPEED 200
-#define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 600
+#define PLAYER_CHARACTER_DEFAULT_SPEED 130
+#define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 1200
 #define PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL 0.01
 #define PLAYER_CHARACTER_BULLET_NUM 2
 
 #define ENEMY_CHARACTER0_DEFAULT_NUM 32
 #define ENEMY_CHARACTER0_DEFAULT_SPEED 200
 #define ENEMY_CHARACTER0_DEFAULT_ACCELERATION 0
-#define ENEMY_CHARACTER0_DEFAULT_INTERVAL 5
+#define ENEMY_CHARACTER0_DEFAULT_INTERVAL 2
 #define ENEMY_BULLET0_DEFAULT_NUM 64
-#define ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED 250
+#define ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED 350
+
+#define ENEMY_CHARACTER1_DEFAULT_NUM 16
+#define ENEMY_CHARACTER1_DEFAULT_SPEED 160
+#define ENEMY_CHARACTER1_DEFAULT_ACCELERATION 0
+#define ENEMY_CHARACTER1_DEFAULT_INTERVAL 3
+
+#define ENEMY_CHARACTER2_DEFAULT_NUM 16
+#define ENEMY_CHARACTER2_DEFAULT_SPEED 160
+#define ENEMY_CHARACTER2_DEFAULT_ACCELERATION 0
+#define ENEMY_CHARACTER2_DEFAULT_INTERVAL 3
+
+#define POWERUPCORE_DEFAULT_NUM 16
+#define POWERUPCORE_DEFAULT_SPEED 100
+#define POWERUPCORE_OBTAIN_SPEED 20
+#define POWERUPCORE_SPEEDUP_TAG "pusp"
+#define BACKGROUND1_SPEED 30
+#define BACKGROUND2_SPEED 60
+#define BACKGROUND3_SPEED 100
+
+#define DESTROY_EFFECT_FADETIME 0.15
+#define DESTROY_EFFECT_NUM 64
 
 typedef struct playerbullet0 PlayerBullet0;
 typedef struct enemybullet0 EnemyBullet0;
@@ -58,6 +80,7 @@ typedef struct playercharacter
 	Object* imageObject;
 	Collider2D* collider;
 	Image2D* image0;
+	double speed;
 
 	Timer* timer;
 } PlayerCharacter;
@@ -93,6 +116,65 @@ typedef struct enemycharacter0
 	Timer* timer[ENEMY_CHARACTER0_DEFAULT_NUM];
 } EnemyCharacter0;
 
+typedef struct enemycharacter2 // vehicle
+{
+	Object* masterObject;
+	Object* object[ENEMY_CHARACTER2_DEFAULT_NUM];
+	Object* cannonObject[ENEMY_CHARACTER2_DEFAULT_NUM];
+	Object* tireObject[ENEMY_CHARACTER2_DEFAULT_NUM];
+	Collider2D* collider[ENEMY_CHARACTER2_DEFAULT_NUM];
+	Image2D* image0; // tire
+	Image2D* image1; // cannon
+	Audio* audioDestroy;
+	double speed[ENEMY_CHARACTER2_DEFAULT_SPEED];
+	double acceleration;
+	double interval;
+
+	Timer* masterTimer;
+	Timer* timer[ENEMY_CHARACTER0_DEFAULT_NUM];
+} EnemyCharacter2;
+
+typedef struct boss0
+{
+	Object* masterObject;
+	Object* childObject;
+	Object* body;
+	Object* uleg;
+	Object* lleg;
+	Object* uarm;
+	Object* larm;
+	Object* head;
+	Object* jaw;
+	Object* eye;
+
+	Collider2D* bdcol;
+	Collider2D* ulcol;
+	Collider2D* llcol;
+	Collider2D* uacol;
+	Collider2D* lacol;
+	Collider2D* hdcol;
+	Collider2D* jwcol;
+	Collider2D* eycol;
+	Collider2D* blcol;
+
+	Timer* timer;
+
+	Audio* aPunch;
+	Audio* aMao;
+	Audio* aLazer;
+	Audio* aGass;
+	Audio* aBump;
+
+	double pint; //punch interval
+	double mint; //mao
+	double lint; //lazer
+	double gint; //gass
+	double bint; //bump
+
+	double hp1;
+	double hp2;
+} Boss0;
+
 typedef struct enemybullet0
 {
 	Object* masterObject;
@@ -107,6 +189,38 @@ typedef struct enemybullet0
 	Timer* masterTimer;
 	Timer* timer[ENEMY_BULLET0_DEFAULT_NUM];
 } EnemyBullet0;
+
+typedef struct powerupcore
+{
+	Object* masterObject;
+	Object* object[ENEMY_BULLET0_DEFAULT_NUM];
+	Object* imageObject[ENEMY_BULLET0_DEFAULT_NUM];
+	Collider2D* collider[ENEMY_BULLET0_DEFAULT_NUM];
+	Image2D* image0;
+	Audio* audioGet;
+	Timer* masterTimer;
+} PowerupCore;
+
+typedef struct destroyeffect
+{
+	Object* masterObject;
+	Object* object[DESTROY_EFFECT_NUM];
+	Image2D* image0;
+	double fadeTime;
+
+	Timer* masterTimer;
+	Timer* timer[DESTROY_EFFECT_NUM];
+} DestroyEffect;
+
+struct waveargstruct
+{
+	double exponent;
+	double stopRatio;
+	double xCenter;
+	double yStart;
+	double yLength;
+	double indexoffset;
+};
 
 void display(void);
 void reshape(int, int);
@@ -128,21 +242,45 @@ void initPlayerBullet0();
 void movePlayerCharacter();
 void movePlayerBullet0();
 
+void initSphinx();
+void moveSphinx();
+
 void initEnemyCharacter0();
 void initEnemyBullet0();
 void moveEnemyCharacter0();
 void moveEnemyBullet0();
 
-void addEnemyCharacter0(Vector2D* const pos);
+void initEnemyCharacter1();
+void moveEnemyCharacter1();
+
+void initEnemyCharacter2();
+
+void addEnemyCharacter0(Vector2D* const pos, const int start, const int end);
+void addEnemyCharacter1(Vector2D* const pos, const double offset, const int start, const int end);
 void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict);
 
 void updateTimer();
+
+void initPowerupCore();
+void movePowerupCore();
+void addPowerupCore(Vector2D* const pos, const char tag[COLLIDER2D_TAG_LENGTH]);
+
+void initDestroyEffect();
+void addDestroyEffect(Vector2D* const pos);
+void moveDestroyEffect();
+
+void initBackground();
+void moveBackground();
 
 void stage0_init();
 void stage0_initWave0childAnimation();
 void stage0_initWave0animation();
 void stage0_update();
 
+void setStageAnimation(Animation2D* const anm, const int fnum, Object** const object, const double framelength, const int istart, const int iend, void func(Vector2D*, int, int, int, int, int , double, void*), void* arg);
+void moveStopMove(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct);
+void circleCircleCircle(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* radiusd);
+void moveStopMoveStraight(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct);
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
    // // // // // // // // // // // // // // // // // // // // // // // // // // // 
@@ -158,9 +296,28 @@ double totaltime = 0;
 PlayerCharacter playerCharacter;
 PlayerBullet0 playerBullet0;
 EnemyCharacter0 enemyCharacter0;
+EnemyCharacter0 enemyCharacter1;
+EnemyCharacter2 enemyCharacter2;
 EnemyBullet0 enemyBullet0;
+PowerupCore powerupCore;
+DestroyEffect destroyEffect0;;
+Boss0 sphinx;
 
+Object* backbase;
+Object* back1;
+Object* back2;
+Object* back3;
+Object* back1s;
+Object* back2s;
+Object* back3s;
+Timer* backTimer;
+int backgroundWidth;
+
+Object* stage0;
+double stage0_moving_speed = 120;
 Timer* stage0Timer;
+
+long long score;
 
 int main(int argc, char **argv)
 {
@@ -170,12 +327,21 @@ int main(int argc, char **argv)
 	
 	view = View_new();
 	view->position.z = 1;
+	view->window_width = WINDOW_WIDTH;
+	view->window_height = WINDOW_HEIGHT;
 
 	initPlayerCharacter();
 	initPlayerBullet0();
 	initEnemyCharacter0();
 	initEnemyBullet0();
+	initEnemyCharacter1();
+	initSphinx();
 
+	initDestroyEffect();
+
+	initPowerupCore();
+
+	initBackground();
 	stage0_init();
 
 	glutTimerFunc(0, timer, 0);
@@ -191,10 +357,16 @@ void display(void)
 	keyboard();
 
 	View_begin_2d(view);
+		Object_put(backbase);
+		Object_put(stage0);
+		Object_put(sphinx.masterObject);
 		Object_put(playerCharacter.object);
-		Object_put(playerBullet0.masterObject);
 		Object_put(enemyCharacter0.masterObject);
+		Object_put(enemyCharacter1.masterObject);
+		Object_put(destroyEffect0.masterObject);
+		Object_put(playerBullet0.masterObject);
 		Object_put(enemyBullet0.masterObject);
+		Object_put(powerupCore.masterObject);
 		Collider2D_judge_all();
 	View_end_2d();
 
@@ -210,12 +382,18 @@ void timer(int value)
 
 	updateTimer();
 
+	moveBackground();
+
 	stage0_update();
 
 	movePlayerBullet0();
 	movePlayerCharacter();
 	moveEnemyCharacter0();
 	moveEnemyBullet0();
+	moveEnemyCharacter1();
+	movePowerupCore();
+	moveDestroyEffect();
+	moveSphinx();
 
 	fps();
 }
@@ -223,8 +401,8 @@ void timer(int value)
 void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
-	view->window_width = w;
-	view->window_height = h;
+//	view->window_width = w;
+//	view->window_height = h;
 } 
 
 void getWindowSize(int *x, int *y)
@@ -389,6 +567,10 @@ void setColliderLayerMatrix()
 	// 15 -> pc bullets
 	// 24 -> ec
 	// 23 -> ec bullets
+	// 10 -> powercore
+	// 20 -> terrain
+	// 6 -> sphinx
+	// 6 -> sphinx
 
 	char lm[] = {
 	//	0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31	
@@ -400,25 +582,25 @@ void setColliderLayerMatrix()
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 
+		1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
+		1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 1, 
+		1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 
@@ -438,12 +620,14 @@ void initPlayerCharacter()
 	playerCharacter.collider = Collider2D_new();
 	playerCharacter.image0 = Image2D_new();
 	playerCharacter.timer = Timer_new();
+	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
 
 	playerCharacter.imageObject->transform->position.x = -4;
 	playerCharacter.imageObject->transform->position.y = -7;
 
 	playerCharacter.object->transform->position.x = 300;
 	playerCharacter.object->transform->position.y = 300;
+	strncpy(playerCharacter.collider->tag, "plch", 4);
 
 	Collider2D_set_collider_object(playerCharacter.collider, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_register_collider(playerCharacter.collider, 16);
@@ -484,6 +668,7 @@ void initPlayerBullet0()
 		playerBullet0.collider[i] = Collider2D_new();
 		pbo = playerBullet0.object[i];
 		pbc = playerBullet0.collider[i];
+		strncpy(pbc->tag, "pb00", 4);
 
 		Collider2D_set_collider_object(pbc, COLLIDER2D_COLLIDER_RECT );
 		Collider2D_register_collider(pbc, 15);
@@ -507,25 +692,25 @@ void movePlayerCharacter()
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
-		playerCharacter.object->transform->position.x -= spf * PLAYER_CHARACTER_DEFAULT_SPEED;
+		playerCharacter.object->transform->position.x -= spf * playerCharacter.speed;
 	}
 	if(Keyboard_is_down('d'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
-		playerCharacter.object->transform->position.x += spf * PLAYER_CHARACTER_DEFAULT_SPEED;
+		playerCharacter.object->transform->position.x += spf * playerCharacter.speed;
 	}
 	if(Keyboard_is_down('w'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
-		playerCharacter.object->transform->position.y -= spf * PLAYER_CHARACTER_DEFAULT_SPEED;
+		playerCharacter.object->transform->position.y -= spf * playerCharacter.speed;
 	}
 	if(Keyboard_is_down('s'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
-		playerCharacter.object->transform->position.y += spf * PLAYER_CHARACTER_DEFAULT_SPEED;
+		playerCharacter.object->transform->position.y += spf * playerCharacter.speed;
 	}
 
 	if(Keyboard_is_pressed('j'))
@@ -560,11 +745,31 @@ void movePlayerCharacter()
 
 	if(playerCharacter.collider->hits[0] != NULL)
 	{
-		DP(
-		   "---------------------------------------------------------\n"
-		   "You Died!!\n"
-		   "---------------------------------------------------------\n"
-		);
+		bool pucore = false;
+		for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
+		{
+			if(playerCharacter.collider->hits[i] != NULL)
+			{
+				if(strncmp(playerCharacter.collider->hits[i]->tag, POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
+				{
+					pucore = true;
+					break;
+				}
+			}
+		}
+
+		if(pucore == true)
+		{
+			playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
+		}
+		else
+		{
+			DP(
+			   "---------------------------------------------------------\n"
+			   "You Died!!\n"
+			   "---------------------------------------------------------\n"
+			);
+		}
 		//exit(0);
 	}
 
@@ -586,6 +791,22 @@ void movePlayerBullet0()
 		{
 			Object_set_invalid(pbo);
 			playerBullet0.collider[i]->isValid = false;
+			for(int j = 0; j < COLLIDER2D_HITS_NUM; j++)
+			{
+				if(playerBullet0.collider[i]->hits[j] != NULL)
+				{
+					if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc0", COLLIDER2D_TAG_LENGTH) == 0)
+					{
+						score += 100;
+						DP("score : %lld\n", score);
+					}else if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc1", COLLIDER2D_TAG_LENGTH) == 0)
+					{
+						score += 200;
+						DP("score : %lld\n", score);
+
+					}
+				}
+			}
 		}
 
 		if(isValid == true)
@@ -604,6 +825,223 @@ void movePlayerBullet0()
 
 		}
 	}
+}
+	//Image2D_load(enemyCharacter0.destroyImage, "resource/image/enemy/plane/destroy.png");
+void initSphinx()
+{
+	sphinx.hp1 = 100;
+	sphinx.hp2 = 100;
+
+	sphinx.masterObject = Object_new();
+	sphinx.childObject = Object_new();
+	
+	sphinx.body = Object_new();
+	sphinx.uleg = Object_new();
+	sphinx.lleg = Object_new();
+	sphinx.uarm = Object_new();
+	sphinx.larm = Object_new();
+	sphinx.head = Object_new();
+	sphinx.jaw = Object_new();
+	sphinx.eye = Object_new();
+
+	sphinx.timer = Timer_new();
+
+	sphinx.aPunch = Audio_new(2);
+	sphinx.aMao = Audio_new(2);
+	sphinx.aLazer = Audio_new(16);
+	sphinx.aGass = Audio_new(16);
+	sphinx.aBump = Audio_new(2);
+
+	sphinx.pint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+	sphinx.mint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+	sphinx.lint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+	sphinx.gint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+	sphinx.bint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+
+	Image2D* ibd;
+	Image2D* iul;
+	Image2D* ill;
+	Image2D* iua;
+	Image2D* ila;
+	Image2D* ihd;
+	Image2D* ijw;
+	Image2D* iey;
+
+	ibd = Image2D_new();
+	iul = Image2D_new();
+	ill = Image2D_new();
+	iua = Image2D_new();
+	ila = Image2D_new();
+	ihd = Image2D_new();
+	ijw = Image2D_new();
+	iey = Image2D_new();
+
+	sphinx.childObject->transform->position.x = 400;
+	sphinx.childObject->transform->position.y = 400;
+
+	ihd->p_transform->position.x = -90;
+	ihd->p_transform->position.y = -110;
+	sphinx.head->transform->position.x = 90;
+	sphinx.head->transform->position.y = 110;
+	
+	Image2D_load(ibd, "resource/image/enemy/boss/body.png");
+	Image2D_load(iul, "resource/image/enemy/boss/uleg.png");
+	Image2D_load(ill, "resource/image/enemy/boss/lleg.png");
+	Image2D_load(iua, "resource/image/enemy/boss/uarm.png");
+	Image2D_load(ila, "resource/image/enemy/boss/larm.png");
+	Image2D_load(ihd, "resource/image/enemy/boss/head.png");
+	Image2D_load(ijw, "resource/image/enemy/boss/jaw.png");
+	Image2D_load(iey, "resource/image/enemy/boss/eye.png");
+
+	//Audio_load(aPunch, "resource/audio/enemy/boss/0.wav");
+	//Audio_load(aMao, "resource/audio/enemy/boss/0.wav");
+	//Audio_load(aLazer, "resource/audio/enemy/boss/0.wav");
+	//Audio_load(aGass, "resource/audio/enemy/boss/0.wav");
+	//Audio_load(aBump, "resource/audio/enemy/boss/0.wav");
+	
+	sphinx.bdcol = Collider2D_new();
+	sphinx.ulcol = Collider2D_new();
+	sphinx.llcol = Collider2D_new();
+	sphinx.uacol = Collider2D_new();
+	sphinx.lacol = Collider2D_new();
+	sphinx.hdcol = Collider2D_new();
+	sphinx.jwcol = Collider2D_new();
+	sphinx.eycol = Collider2D_new();
+	sphinx.blcol = Collider2D_new();
+
+	strncpy(sphinx.bdcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.ulcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.llcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.uacol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.lacol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.hdcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.jwcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.eycol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.blcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+
+	Collider2D_set_collider_object(sphinx.bdcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.ulcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.llcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.uacol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.lacol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.hdcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.jwcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.eycol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.blcol, COLLIDER2D_COLLIDER_RECT);
+
+	Collider2D_register_collider(sphinx.bdcol, 6);
+	Collider2D_register_collider(sphinx.ulcol, 6);
+	Collider2D_register_collider(sphinx.llcol, 6);
+	Collider2D_register_collider(sphinx.uacol, 6);
+	Collider2D_register_collider(sphinx.lacol, 6);
+	Collider2D_register_collider(sphinx.hdcol, 6);
+	Collider2D_register_collider(sphinx.jwcol, 6);
+	Collider2D_register_collider(sphinx.eycol, 6);
+	Collider2D_register_collider(sphinx.blcol, 6);
+
+	RectCollider* bdrc = (RectCollider*)(sphinx.bdcol->colObj);
+	RectCollider* ulrc = (RectCollider*)(sphinx.ulcol->colObj);
+	RectCollider* llrc = (RectCollider*)(sphinx.llcol->colObj);
+	RectCollider* uarc = (RectCollider*)(sphinx.uacol->colObj);
+	RectCollider* larc = (RectCollider*)(sphinx.lacol->colObj);
+	RectCollider* hdrc = (RectCollider*)(sphinx.hdcol->colObj);
+	RectCollider* jwrc = (RectCollider*)(sphinx.jwcol->colObj);
+	RectCollider* eyrc = (RectCollider*)(sphinx.eycol->colObj);
+	RectCollider* blrc = (RectCollider*)(sphinx.blcol->colObj);
+
+	Vector2D_set_zero(&(bdrc->position));
+	Vector2D_set_zero(&(ulrc->position));
+	Vector2D_set_zero(&(llrc->position));
+	Vector2D_set_zero(&(uarc->position));
+	Vector2D_set_zero(&(larc->position));
+	Vector2D_set_zero(&(hdrc->position));
+	Vector2D_set_zero(&(jwrc->position));
+	Vector2D_set_zero(&(eyrc->position));
+	Vector2D_set_zero(&(blrc->position));
+
+	bdrc->size.x = 25;
+	bdrc->size.y = 25;
+
+	ulrc->size.x = 25;
+	ulrc->size.y = 25;
+
+	llrc->size.x = 25;
+	llrc->size.y = 25;
+
+	uarc->size.x = 25;
+	uarc->size.y = 25;
+
+	larc->size.x = 25;
+	larc->size.y = 25;
+
+	hdrc->size.x = 25;
+	bdrc->size.y = 25;
+	
+	jwrc->size.x = 25;
+	jwrc->size.y = 25;
+
+	eyrc->size.x = 25;
+	eyrc->size.y = 25;
+
+	blrc->size.x = 25;
+	blrc->size.y = 25;
+
+	Object_add_component(sphinx.body, sphinx.bdcol);
+	Object_add_component(sphinx.body, sphinx.blcol);
+	Object_add_component(sphinx.uleg, sphinx.ulcol);
+	Object_add_component(sphinx.lleg, sphinx.llcol);
+	Object_add_component(sphinx.uarm, sphinx.uacol);
+	Object_add_component(sphinx.larm, sphinx.lacol);
+	Object_add_component(sphinx.head, sphinx.hdcol);
+	Object_add_component(sphinx.jaw, sphinx.jwcol);
+	Object_add_component(sphinx.eye, sphinx.eycol);
+
+	Object_add_component(sphinx.body, ibd);
+	Object_add_component(sphinx.uleg, iul);
+	Object_add_component(sphinx.lleg, ill);
+	Object_add_component(sphinx.uarm, iua);
+	Object_add_component(sphinx.larm, ila);
+	Object_add_component(sphinx.head, ihd);
+	Object_add_component(sphinx.jaw, ijw);
+	Object_add_component(sphinx.eye, iey);
+
+	Object_add_component(sphinx.body, sphinx.uleg);
+	Object_add_component(sphinx.uleg, sphinx.lleg);
+
+	Object_add_component(sphinx.body, sphinx.uarm);
+	Object_add_component(sphinx.uarm, sphinx.larm);
+
+	Object_add_component(sphinx.body, sphinx.head);
+	Object_add_component(sphinx.head, sphinx.jaw);
+	Object_add_component(sphinx.head, sphinx.eye);
+
+	Object_add_component(sphinx.childObject, sphinx.body);
+	Object_add_component(sphinx.masterObject, sphinx.childObject);
+
+	sphinx.head->transform->rotation.z = 1;
+}
+
+
+void moveSphinx()
+{
+	Vector2D v;
+	Vector2D_set(&v, &playerCharacter.object->transform->position);
+	Vector2D_sub(&v, &sphinx.childObject->transform->position);
+	Vector2D_sub(&v, &sphinx.body->transform->position);
+	Vector2D_sub(&v, &sphinx.head->transform->position);
+	sphinx.head->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
+	
+	if(rand()%100 == 0)
+	{
+		Vector2D v2;
+		Vector2D_set(&v2, &sphinx.childObject->transform->position);
+		Vector2D_add(&v2, &sphinx.body->transform->position);
+		Vector2D_add(&v2, &sphinx.head->transform->position);
+		v2.y -= 70;
+		Vector2D_normalize(&v);
+		shotEnemyBullet0(&v2, &v);
+	}
+
 }
 
 void initEnemyCharacter0()
@@ -627,12 +1065,15 @@ void initEnemyCharacter0()
 		enemyCharacter0.collider[i] = Collider2D_new();
 		enemyCharacter0.timer[i] = Timer_new();
 
+		enemyCharacter0.object[i]->transform->position.x = -1000;
+
 		enemyCharacter0.imageObject[i]->transform->position.x = 0;
 		enemyCharacter0.imageObject[i]->transform->position.y = -1;
 
 		enemyCharacter0.imageObject[i]->transform->scale.x = 0.7;
 		enemyCharacter0.imageObject[i]->transform->scale.y = 0.7;
 
+		strncpy(enemyCharacter0.collider[i]->tag, "enc0", COLLIDER2D_TAG_LENGTH);
 		Collider2D_set_collider_object(enemyCharacter0.collider[i], COLLIDER2D_COLLIDER_RECT);
 		Collider2D_register_collider(enemyCharacter0.collider[i], 24);
 		RectCollider* rc = (RectCollider*)(enemyCharacter0.collider[i]->colObj);
@@ -684,10 +1125,12 @@ void initEnemyBullet0()
 		eb->collider[i] = Collider2D_new();
 		pbo = eb->object[i];
 		pbc = eb->collider[i];
+		pbo->transform->position.x = -1000;
 
 		eb->timer[i] = Timer_new();
 		Timer_reset_count(eb->timer[i]);
 
+		strncpy(pbc->tag, "enb0", COLLIDER2D_TAG_LENGTH);
 		Collider2D_set_collider_object(pbc, COLLIDER2D_COLLIDER_RECT );
 		Collider2D_register_collider(pbc, 23);
 		rc = (RectCollider*)(pbc->colObj);
@@ -703,65 +1146,285 @@ void initEnemyBullet0()
 	}
 }
 
-void moveEnemyCharacter0()
+void initEnemyCharacter1()
 {
-	const int shotChance = 100;
+	enemyCharacter1.masterObject = Object_new();
+	enemyCharacter1.image0 = Image2D_new();
+	enemyCharacter1.masterTimer = Timer_new();
+	enemyCharacter1.audioDestroy = Audio_new(ENEMY_CHARACTER1_DEFAULT_NUM);
+	enemyCharacter1.speed = ENEMY_CHARACTER1_DEFAULT_SPEED;
+	enemyCharacter1.acceleration = ENEMY_CHARACTER1_DEFAULT_ACCELERATION;
+	enemyCharacter1.interval = ENEMY_CHARACTER1_DEFAULT_INTERVAL;
+
+	Image2D_load(enemyCharacter1.image0, "resource/image/enemy/plane/1.png");
+	Audio_load(enemyCharacter1.audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
+
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
 	{
-		double spf;
-		Timer_get_spf(enemyCharacter0.timer[i], &spf);
-		Object* pbo = enemyCharacter0.object[i];
-		if(enemyCharacter0.collider[i]->hits[0] != NULL)
+		enemyCharacter1.object[i] = Object_new();
+		enemyCharacter1.childObject[i] = Object_new();
+		enemyCharacter1.imageObject[i] = Object_new();
+		enemyCharacter1.collider[i] = Collider2D_new();
+		enemyCharacter1.timer[i] = Timer_new();
+
+		enemyCharacter1.object[i]->transform->position.x = -1000;
+		enemyCharacter1.object[i]->transform->rotation.z = 1;
+
+		enemyCharacter1.imageObject[i]->transform->position.x = 24;
+		enemyCharacter1.imageObject[i]->transform->position.y = -1;
+
+		enemyCharacter1.imageObject[i]->transform->scale.x = -0.7;
+		enemyCharacter1.imageObject[i]->transform->scale.y = 0.7;
+
+		strncpy(enemyCharacter1.collider[i]->tag, "enc1", 4);
+		Collider2D_set_collider_object(enemyCharacter1.collider[i], COLLIDER2D_COLLIDER_RECT);
+		Collider2D_register_collider(enemyCharacter1.collider[i], 24);
+		RectCollider* rc = (RectCollider*)(enemyCharacter1.collider[i]->colObj);
+		Vector2D_set_zero(&(rc->position));
+		rc->size.x = 13;
+		rc->size.y = 25;
+		//enemyCharacter1.enemyBullet0[i] = (EnemyBullet0*)malloc(sizeof(EnemyBullet0));
+		//initEnemyBullet0(enemyCharacter1.enemyBullet0[i]);
+		Object_add_component(enemyCharacter1.imageObject[i], enemyCharacter1.image0);
+		Object_add_component(enemyCharacter1.childObject[i], enemyCharacter1.imageObject[i]);
+		Object_add_component(enemyCharacter1.childObject[i], enemyCharacter1.collider[i]);
+		Object_add_component(enemyCharacter1.object[i], enemyCharacter1.childObject[i]);
+		//Object_add_component(enemyCharacter1.object[i], enemyCharacter1.enemyBullet0[i]->masterObject);
+		Object_add_component(enemyCharacter1.masterObject, enemyCharacter1.object[i]);
+	}
+
+
+
+}
+
+void initEnemyCharacter2()
+{
+	enemyCharacter2.masterObject = Object_new();
+	enemyCharacter2.image0 = Image2D_new();
+	enemyCharacter2.image1 = Image2D_new();
+	enemyCharacter2.masterTimer = Timer_new();
+	enemyCharacter2.audioDestroy = Audio_new(ENEMY_CHARACTER2_DEFAULT_NUM);
+	enemyCharacter2.acceleration = ENEMY_CHARACTER2_DEFAULT_ACCELERATION;
+	enemyCharacter2.interval = ENEMY_CHARACTER2_DEFAULT_INTERVAL;
+
+	Image2D_load(enemyCharacter2.image0, "resource/image/enemy/vehicle/0t.png");
+	Image2D_load(enemyCharacter2.image1, "resource/image/enemy/vehicle/0c.png");
+	Audio_load(enemyCharacter2.audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
+
+	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	{
+		enemyCharacter2.object[i] = Object_new();
+		enemyCharacter2.cannonObject[i] = Object_new();
+		enemyCharacter2.tireObject[i] = Object_new();
+		enemyCharacter2.collider[i] = Collider2D_new();
+		enemyCharacter2.timer[i] = Timer_new();
+		enemyCharacter2.speed[i] = ENEMY_CHARACTER2_DEFAULT_SPEED;
+
+		enemyCharacter2.object[i]->transform->position.x = -1000;
+		enemyCharacter2.object[i]->transform->rotation.z = 1;
+
+		strncpy(enemyCharacter2.collider[i]->tag, "enc2", 4);
+		Collider2D_set_collider_object(enemyCharacter2.collider[i], COLLIDER2D_COLLIDER_RECT);
+		Collider2D_register_collider(enemyCharacter2.collider[i], 24);
+		RectCollider* rc = (RectCollider*)(enemyCharacter2.collider[i]->colObj);
+		Vector2D_set_zero(&(rc->position));
+		rc->size.x = 13;
+		rc->size.y = 25;
+		//enemyCharacter2.enemyBullet0[i] = (EnemyBullet0*)malloc(sizeof(EnemyBullet0));
+		//initEnemyBullet0(enemyCharacter2.enemyBullet0[i]);
+		Object_add_component(enemyCharacter2.tireObject[i], enemyCharacter2.image0);
+		Object_add_component(enemyCharacter2.cannonObject[i], enemyCharacter2.image1);
+		Object_add_component(enemyCharacter2.cannonObject[i], enemyCharacter2.collider[i]);
+		Object_add_component(enemyCharacter2.object[i], enemyCharacter2.cannonObject[i]);
+		Object_add_component(enemyCharacter2.object[i], enemyCharacter2.tireObject[i]);
+		//Object_add_component(enemyCharacter2.object[i], enemyCharacter2.enemyBullet0[i]->masterObject);
+		Object_add_component(enemyCharacter2.masterObject, enemyCharacter2.object[i]);
+	}
+}
+
+void moveEnemyCharacter0()
+{
+	int shotChance = 150;
+	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	{
+			double spf;
+			Timer_get_spf(enemyCharacter0.timer[i], &spf);
+			Object* pbo = enemyCharacter0.object[i];
+			if(enemyCharacter0.collider[i]->hits[0] != NULL)
+			{
+				DPIF(false, "%p is destroyed by %p\n", enemyCharacter0.collider[i], enemyCharacter0.collider[i]->hits[0]);
+				Object_set_invalid(pbo);
+				enemyCharacter0.collider[i]->isValid = false;
+				Audio_play(enemyCharacter0.audioDestroy);
+
+				Vector2D v;
+				v.x = pbo->transform->position.x + 13;
+				v.y = pbo->transform->position.y + 13;
+				addDestroyEffect(&v);
+
+			}
+			bool isValid;
+			Object_is_valid(pbo, &isValid);
+
+			if(isValid == true)
+			{
+				// shot if player is in the front
+				double t;
+				Timer_get_count(enemyCharacter0.timer[i], &t);
+				if(t > enemyCharacter0.interval && rand()%shotChance == 0)
+				{
+					double diff = playerCharacter.object->transform->position.y - enemyCharacter0.object[i]->transform->position.y;
+					if(diff / ((diff > 0) - (0 > diff)) < 100)
+					{
+						if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
+						{
+							Timer_reset_count(enemyCharacter0.timer[i]);
+							Vector2D v;
+							v.x = -3.0; // 7 : 1
+							v.y = rand()/(double)RAND_MAX;
+							Vector2D_normalize(&v);
+							shotEnemyBullet0(&(enemyCharacter0.object[i]->transform->position), &v);
+						}
+					}
+				}
+			}
+		if(pbo->transform->position.x < -50)
 		{
-			DPIF(false, "%p is destroyed by %p\n", enemyCharacter0.collider[i], enemyCharacter0.collider[i]->hits[0]);
 			Object_set_invalid(pbo);
 			enemyCharacter0.collider[i]->isValid = false;
-			Audio_play(enemyCharacter0.audioDestroy);
+			//pbo->transform->position.x = view->window_width;
+			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+
 		}
-		bool isValid;
-		Object_is_valid(pbo, &isValid);
-
-		if(isValid == true)
-		{
-
-			// shot randomly
-			double t;
-			Timer_get_count(enemyCharacter0.timer[i], &t);
-			if(t > enemyCharacter0.interval)
+	}
+}
+void moveEnemyCharacter1()
+{
+	int shotChance = 200;
+	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
+	{
+			double spf;
+			Timer_get_spf(enemyCharacter1.timer[i], &spf);
+			Object* pbo = enemyCharacter1.object[i];
+			// destroyed ?
+			if(enemyCharacter1.collider[i]->hits[0] != NULL)
 			{
-				if(rand()%shotChance == 0)
+				DPIF(false, "%p is destroyed by %p\n", enemyCharacter1.collider[i], enemyCharacter1.collider[i]->hits[0]);
+				Object_set_invalid(pbo);
+				enemyCharacter1.collider[i]->isValid = false;
+				Audio_play(enemyCharacter1.audioDestroy);
+
+				Vector2D v;
+				v.x = pbo->transform->position.x + 8;
+				v.y = pbo->transform->position.y + 8;
+				addDestroyEffect(&v);
+			}
+			bool isValid;
+			Object_is_valid(pbo, &isValid);
+
+			if(isValid == true)
+			{
+				double t;
+				Timer_get_count(enemyCharacter1.timer[i], &t);
+
+				// just move forward
+				enemyCharacter1.object[i]->transform->position.x += cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
+				enemyCharacter1.object[i]->transform->position.y += sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
+
+				Vector2D v;
+				Vector2D_set(&v, &(playerCharacter.object->transform->position));
+				Vector2D_sub(&v, &(enemyCharacter1.object[i]->transform->position));
+				Vector2D_normalize(&v);
+				if(fabs(v.x - cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05 || fabs(v.y - sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05)
 				{
-					Vector2D v;
-					Timer_reset_count(enemyCharacter0.timer[i]);
-					Vector2D_set(&v, &(playerCharacter.object->transform->position));
-					Vector2D_sub(&v, &(enemyCharacter0.object[i]->transform->position));
-					if(rand() % 3 == 0)
+					// point to player
+					if(t > enemyCharacter1.interval*0.4)
 					{
-						v.x += (rand() % 11 - 5 ) * 3;
-						v.y += (rand() % 11 - 5 ) * 3;
+				       		enemyCharacter1.object[i]->transform->rotation.w += 6;
 					}
 					else
 					{
-						v.x += (rand() % 11 - 5 ) * 150;
-						v.y += (rand() % 11 - 5 ) * 150;
+				       		enemyCharacter1.object[i]->transform->rotation.w -= 6;
 					}
-					Vector2D_normalize(&v);
-					shotEnemyBullet0(&(enemyCharacter0.object[i]->transform->position), &v);
+				}
+				else
+				{
+					// shot if player is in the front
+					if(t > enemyCharacter1.interval)
+					{
+						if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
+						{
+							Timer_reset_count(enemyCharacter1.timer[i]);
+							Vector2D v2;
+							Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
+							v2.y += 10;
+							shotEnemyBullet0(&v2, &v);
+						}
+					}
 				}
 			}
-
-
-
-			//enemyCharacter0.speed += enemyCharacter0.acceleration * spf;
-			//pbo->transform->position.x -= enemyCharacter0.speed * spf;
-			if(pbo->transform->position.x < -100)
-			{
-				Object_set_invalid(pbo);
-				enemyCharacter0.collider[i]->isValid = false;
-			}
-		}
-		else
+		if(pbo->transform->position.x < -50)
 		{
+			Object_set_invalid(pbo);
+			enemyCharacter1.collider[i]->isValid = false;
+			//pbo->transform->position.x = view->window_width;
+			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+
+		}
+	}
+}
+
+void moveEnemyCharacter2()
+{
+	int shotChance = 150;
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
+	{
+			double spf;
+			bool isTerrain = false;
+			Timer_get_spf(enemyCharacter2.timer[i], &spf);
+			Object* pbo = enemyCharacter2.object[i];
+			if(enemyCharacter2.collider[i]->hits[0] != NULL)
+			{
+				for(int ci = 0; ci < COLLIDER2D_HITS_NUM; ci++)
+				{
+					if(strncmp(enemyCharacter2.collider[i]->hits[ci]->tag, "trrn", 4) == 0)
+					{
+						enemyCharacter2.speed[i] *= -1;
+						isTerrain = true;
+					}
+				}
+				if(isTerrain == false)
+				{
+					DPIF(false, "%p is destroyed by %p\n", enemyCharacter2.collider[i], enemyCharacter2.collider[i]->hits[0]);
+					Object_set_invalid(pbo);
+					enemyCharacter2.collider[i]->isValid = false;
+					Audio_play(enemyCharacter2.audioDestroy);
+				}
+			}
+			bool isValid;
+			Object_is_valid(pbo, &isValid);
+
+			enemyCharacter1.object[i]->transform->position.x += spf * enemyCharacter1.speed;
+
+			if(isValid == true)
+			{
+				// shot randomly
+				double t;
+				Timer_get_count(enemyCharacter2.timer[i], &t);
+				if(t > enemyCharacter2.interval && rand()%shotChance == 0)
+				{
+					Timer_reset_count(enemyCharacter2.timer[i]);
+					Vector2D v;
+					v.x = cos(enemyCharacter2.cannonObject[i]->transform->rotation.w/180.0*M_PI);
+					v.y = sin(enemyCharacter2.cannonObject[i]->transform->rotation.w/180.0*M_PI);
+					Vector2D_normalize(&v);
+					shotEnemyBullet0(&(enemyCharacter2.cannonObject[i]->transform->position), &v);
+				}
+			}
+		if(pbo->transform->position.x < -50)
+		{
+			Object_set_invalid(pbo);
+			enemyCharacter2.collider[i]->isValid = false;
 			//pbo->transform->position.x = view->window_width;
 			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
 
@@ -809,9 +1472,9 @@ void moveEnemyBullet0()
 }
 
 
-void addEnemyCharacter0(Vector2D* const pos)
+void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
 {
-	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	for(int i = start; i < end; i++)
 	{
 		bool isValid;
 		Object_is_valid(enemyCharacter0.object[i], &isValid);
@@ -822,6 +1485,34 @@ void addEnemyCharacter0(Vector2D* const pos)
 			enemyCharacter0.collider[i]->isValid = true;
 			Vector2D_set(&(enemyCharacter0.object[i]->transform->position), pos);
 			Timer_set_count(enemyCharacter0.timer[i], enemyCharacter0.interval);
+			//break;
+		}
+		else
+		{
+			DEIF(true, "couldnt add enemy %d\n", i);
+			break;
+		}
+	}
+}
+void addEnemyCharacter1(Vector2D* const pos, const double offset, const int start, const int end)
+{
+	for(int i = start; i < end; i++)
+	{
+		bool isValid;
+		Object_is_valid(enemyCharacter1.object[i], &isValid);
+		if(isValid == false)
+		{
+			DPIF(false, "i:%d\n", i);
+			Object_set_valid(enemyCharacter1.object[i]);
+			enemyCharacter1.collider[i]->isValid = true;
+			pos->y += (i-start)*offset;
+			Vector2D_set(&(enemyCharacter1.object[i]->transform->position), pos);
+			Timer_set_count(enemyCharacter1.timer[i], enemyCharacter1.interval);
+			//break;
+		}
+		else
+		{
+			DEIF(true, "couldnt add an enemy %d\n", i);
 			break;
 		}
 	}
@@ -873,18 +1564,321 @@ void updateTimer()
 	Timer_count(enemyCharacter0.masterTimer);
 	Timer_count(enemyBullet0.masterTimer);
 
+	Timer_count(enemyCharacter1.masterTimer);
+
+	Timer_count(powerupCore.masterTimer);
+	Timer_count(destroyEffect0.masterTimer);
+
 	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
 	{
 		Timer_count(enemyBullet0.timer[i]);
 	}
+
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
 	{
 		Timer_count(enemyCharacter0.timer[i]);
 	}
 
+	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
+	{
+		Timer_count(enemyCharacter1.timer[i]);
+	}
+
+	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
+	{
+		Timer_count(destroyEffect0.timer[i]);
+	}
+
+	Timer_count(backTimer);
 	Timer_count(stage0Timer);
+	Timer_count(sphinx.timer);
 }
 
+void initPowerupCore()
+{
+
+	PowerupCore* eb = &powerupCore;
+
+	eb->masterObject = Object_new();
+	eb->image0 = Image2D_new();
+	eb->audioGet = Audio_new(POWERUPCORE_DEFAULT_NUM);
+	eb->masterTimer = Timer_new();
+	
+	Image2D_load(eb->image0, "resource/image/core/powerupcore/0.png");
+	Audio_load(eb->audioGet, "resource/audio/enemy/bullet/shot0.wav");
+
+	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
+	{
+		Object* pbo;
+		Collider2D* pbc;
+		RectCollider* rc;
+
+		eb->object[i] = Object_new();
+		eb->imageObject[i] = Object_new();
+		eb->collider[i] = Collider2D_new();
+		pbo = eb->object[i];
+		pbc = eb->collider[i];
+		pbo->transform->position.x = -1000;
+		eb->imageObject[i]->transform->scale.x = 0.5;
+		eb->imageObject[i]->transform->scale.y = 0.5;
+
+
+		strncpy(pbc->tag, "pwcr", COLLIDER2D_TAG_LENGTH);
+		Collider2D_set_collider_object(pbc, COLLIDER2D_COLLIDER_RECT );
+		Collider2D_register_collider(pbc, 23);
+		rc = (RectCollider*)(pbc->colObj);
+		Vector2D_set_zero(&(rc->position));
+		rc->size.x = 20;
+		rc->size.y = 20;
+
+		Object_add_component(eb->imageObject[i], eb->image0);
+		Object_add_component(pbo, eb->imageObject[i]);
+		Object_add_component(pbo, pbc);
+		Object_add_component(eb->masterObject, pbo);
+
+		Object_set_invalid(pbo);
+	}
+}
+
+void addPowerupCore(Vector2D* const pos, const char tag[COLLIDER2D_TAG_LENGTH])
+{
+	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
+	{
+		bool isValid;
+		Object_is_valid(powerupCore.object[i], &isValid);
+		if(isValid == false)
+		{
+			DPIF(false, "i:%d\n", i);
+			Object_set_valid(powerupCore.object[i]);
+			powerupCore.collider[i]->isValid = true;
+			strncpy(powerupCore.collider[i]->tag, tag, COLLIDER2D_TAG_LENGTH);
+			Vector2D_set(&(powerupCore.object[i]->transform->position), pos);
+			return;
+		}
+	}
+	DEIF(true, "couldnt add a powercore\n");
+}
+
+void movePowerupCore()
+{
+	double spf;
+	Timer_get_spf(powerupCore.masterTimer, &spf);
+	PowerupCore* eb = &powerupCore;
+	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
+	{
+
+		Object* pbo = eb->object[i];
+		if(eb->collider[i]->hits[0] != NULL)
+		{
+			DPIF(false, "hit\n");
+			Object_set_invalid(pbo);
+			eb->collider[i]->isValid = false;
+			Audio_play(powerupCore.audioGet);
+		}
+		bool isValid;
+		Object_is_valid(pbo, &isValid);
+
+		if(isValid == true)
+		{
+			pbo->transform->position.x -= spf * POWERUPCORE_DEFAULT_SPEED;
+
+			if(pbo->transform->position.x < -100 || pbo->transform->position.y < 0 || view->window_height+8 < pbo->transform->position.y)
+			{
+				Object_set_invalid(pbo);
+				eb->collider[i]->isValid = false;
+			}
+		}
+		else
+		{
+			//pbo->transform->position.x = view->window_width;
+			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+
+		}
+	}
+}
+
+
+void initBackground()
+{
+	backbase = Object_new();
+	back1 = Object_new();
+	back2 = Object_new();
+	back3 = Object_new();
+	back1s = Object_new();
+	back2s = Object_new();
+	back3s = Object_new();
+	backTimer = Timer_new();
+
+	Image2D* bbi;
+	Image2D* b1i;
+	Image2D* b2i;
+	Image2D* b3i;
+
+	bbi = Image2D_new();
+	b1i = Image2D_new();
+	b2i = Image2D_new();
+	b3i = Image2D_new();
+
+	bbi->option = IMAGE2D_TOP_LEFT;
+	b1i->option = IMAGE2D_TOP_LEFT;
+	b2i->option = IMAGE2D_TOP_LEFT;
+	b3i->option = IMAGE2D_TOP_LEFT;
+	
+	Image2D_load(bbi, "resource/image/stage/back/backbase.png");
+	Image2D_load(b1i, "resource/image/stage/back/back1.png");
+	Image2D_load(b2i, "resource/image/stage/back/back2.png");
+	Image2D_load(b3i, "resource/image/stage/back/back3.png");
+	
+	Object_add_component(backbase, bbi);
+	Object_add_component(back1, b1i);
+	Object_add_component(back2, b2i);
+	Object_add_component(back3, b3i);
+
+	Object_add_component(back1s, b1i);
+	Object_add_component(back2s, b2i);
+	Object_add_component(back3s, b3i);
+
+	Object_add_component(backbase, back1);
+	Object_add_component(backbase, back2);
+	Object_add_component(backbase, back3);
+
+	Object_add_component(backbase, back1s);
+	Object_add_component(backbase, back2s);
+	Object_add_component(backbase, back3s);
+
+	bbi->p_transform->scale.x = WINDOW_WIDTH/1600.0;
+	bbi->p_transform->scale.y = WINDOW_HEIGHT/900.0;
+
+	b1i->p_transform->scale.x = 1.2;
+	b1i->p_transform->scale.y = 1.2;
+
+	b2i->p_transform->scale.x = 1.2;
+	b2i->p_transform->scale.y = 1.2;
+
+	b3i->p_transform->scale.x = 1.2;
+	b3i->p_transform->scale.y = 1.2;
+
+	Image2D_get_width(b1i, &backgroundWidth);
+	back1s->transform->position.x = backgroundWidth;
+	back2s->transform->position.x = backgroundWidth;
+	back3s->transform->position.x = backgroundWidth;
+}
+
+void moveBackground()
+{
+	double spf;
+	Timer_get_spf(backTimer, &spf);
+	
+	back1->transform->position.x -= spf * BACKGROUND1_SPEED;
+	back2->transform->position.x -= spf * BACKGROUND2_SPEED;
+	back3->transform->position.x -= spf * BACKGROUND3_SPEED;
+
+	back1s->transform->position.x -= spf * BACKGROUND1_SPEED;
+	back2s->transform->position.x -= spf * BACKGROUND2_SPEED;
+	back3s->transform->position.x -= spf * BACKGROUND3_SPEED;
+
+	double* px;
+	
+	for(int i = 0; i < 6; i++)
+	{
+		switch(i)
+		{
+			case 0: px = &(back1->transform->position.x);break;
+			case 1:	px = &(back2->transform->position.x);break;
+			case 2:	px = &(back3->transform->position.x);break;
+			case 3:	px = &(back1s->transform->position.x);break;
+			case 4:	px = &(back2s->transform->position.x);break;
+			case 5:	px = &(back3s->transform->position.x);break;
+		}
+		if(*px < -backgroundWidth*1.2)
+		{
+			*px = backgroundWidth*1.2;
+		}
+	}
+
+}
+
+
+void initDestroyEffect()
+{
+	DestroyEffect* eb = &destroyEffect0;
+
+	eb->masterObject = Object_new();
+	eb->image0 = Image2D_new();
+	eb->masterTimer = Timer_new();
+	eb->fadeTime = DESTROY_EFFECT_FADETIME;
+	
+	Image2D_load(eb->image0, "resource/image/enemy/plane/destroy.png");
+	eb->image0->option = IMAGE2D_CENTER;
+
+	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
+	{
+		Object* pbo;
+
+		eb->object[i] = Object_new();
+		pbo = eb->object[i];
+		pbo->transform->position.x = -1000;
+
+		eb->timer[i] = Timer_new();
+
+		Object_add_component(pbo, eb->image0);
+		Object_add_component(eb->masterObject, pbo);
+
+		Object_set_invalid(pbo);
+	}
+}
+
+void addDestroyEffect(Vector2D* const pos)
+{
+	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
+	{
+		bool isValid;
+		Object_is_valid(destroyEffect0.object[i], &isValid);
+		if(isValid == false)
+		{
+			DPIF(false, "i:%d\n", i);
+			Timer_reset_count(destroyEffect0.timer[i]);
+			Object_set_valid(destroyEffect0.object[i]);
+			Vector2D_set(&(destroyEffect0.object[i]->transform->position), pos);
+			return;
+		}
+	}
+	DEIF(true, "couldnt add a destroy effect\n");
+}
+
+void moveDestroyEffect()
+{
+	DestroyEffect* eb = &destroyEffect0;
+	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
+	{
+		Object* pbo = eb->object[i];
+
+		bool isValid;
+		Object_is_valid(pbo, &isValid);
+
+		if(isValid == true)
+		{
+			double count;
+			Timer_get_count(eb->timer[i], &count);
+			if(count > eb->fadeTime)
+			{
+				Object_set_invalid(pbo);
+			}
+			else
+			{
+				pbo->transform->scale.x = (DESTROY_EFFECT_FADETIME*DESTROY_EFFECT_FADETIME - pow(DESTROY_EFFECT_FADETIME - count, 2))*60;
+				pbo->transform->scale.y = (DESTROY_EFFECT_FADETIME*DESTROY_EFFECT_FADETIME - pow(DESTROY_EFFECT_FADETIME - count, 2))*60;
+			}
+
+		}
+		else
+		{
+			//pbo->transform->position.x = view->window_width;
+			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+
+		}
+	}
+}
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
    // // // // // // // // // // // // // // // // // // // // // // // // // // // 
@@ -896,117 +1890,355 @@ void updateTimer()
 Animation2D* wave0childAnimation;
 Animation2D* wave0animation;
 
+Animation2D* wave1childAnimation;
+Animation2D* wave1animation;
+
+Animation2D* wave2childAnimation;
+Animation2D* wave2animation;
+
+Animation2D* wave3childAnimation;
+Animation2D* wave3animation;
+
+Animation2D* wave4childAnimation;
+Animation2D* wave4animation;
+
 void stage0_init()
 {
+	Object* pyramidObj0;
+	Object* groundObj0;
+	Image2D* pyramidImg;
+	Image2D* groundImg;
+	Collider2D* pyramidCol;
+	Collider2D* groundCol;
+
+        pyramidObj0 = Object_new();
+	groundObj0 = Object_new();
+	pyramidImg = Image2D_new();
+	groundImg = Image2D_new();
+	pyramidCol = Collider2D_new();
+	groundCol= Collider2D_new();
+
+	stage0 = Object_new();
+	Object_set_invalid(stage0);
+
+	Object_add_component(pyramidObj0, pyramidImg);
+	Object_add_component(pyramidObj0, pyramidCol);
+
+	Object_add_component(groundObj0, groundImg);
+	Object_add_component(groundObj0, groundCol);
+
+	Object_add_component(stage0, pyramidObj0);
+	Object_add_component(stage0, groundObj0);
+
+	Image2D_load(groundImg, "resource/image/stage/stage0/ground.png");
+	Image2D_load(pyramidImg, "resource/image/stage/stage0/pyramid.png");
+
+	Collider2D_set_collider_object(groundCol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(pyramidCol, COLLIDER2D_COLLIDER_RECT);
+
+	RectCollider* grc = (RectCollider*)(groundCol->colObj);
+	RectCollider* prc = (RectCollider*)(pyramidCol->colObj);
+
+	Vector2D_set_zero(&(grc->position));
+	Vector2D_set_zero(&(prc->position));
+
+	grc->size.x = 60;
+	grc->size.y = 60;
+
+	prc->size.x = 60;
+	prc->size.y = 60;
+
+	groundObj0->transform->position.x = 5000;
+	groundObj0->transform->position.y = WINDOW_HEIGHT-50;
+	groundObj0->transform->scale.x = 10000;
+	groundObj0->transform->scale.y = 10000;
+
+	pyramidObj0->transform->scale.x = 4;
+	pyramidObj0->transform->scale.y = 4;
+	pyramidObj0->transform->position.x =6000;
+	pyramidObj0->transform->position.y = WINDOW_HEIGHT-50-30*sqrt(pow(pyramidObj0->transform->scale.x,2) + pow(pyramidObj0->transform->scale.y,2));
+	pyramidObj0->transform->rotation.z = 1;
+	pyramidObj0->transform->rotation.w = 45;
+
+	Collider2D_register_collider(groundCol, 20);
+	Collider2D_register_collider(pyramidCol, 20);
+
+
 	stage0Timer = Timer_new();
+
 	wave0childAnimation = Animation2D_new();
 	wave0animation = Animation2D_new();
 
-	stage0_initWave0childAnimation();
-	stage0_initWave0animation();
+	wave1childAnimation = Animation2D_new();
+	wave1animation = Animation2D_new();
+
+	wave2childAnimation = Animation2D_new();
+	wave2animation = Animation2D_new();
+
+	wave3childAnimation = Animation2D_new();
+	wave3animation = Animation2D_new();
+
+	wave4childAnimation = Animation2D_new();
+	wave4animation = Animation2D_new();
+
+	struct waveargstruct was;
+	was.exponent = 3.0;
+	was.stopRatio= 27.0;
+	was.xCenter  = WINDOW_WIDTH/2.0+100;
+	was.yStart   = -70.0;
+	was.yLength  = 800.0;
+	was.indexoffset = 4.0;
+
+	double radius = 8;
+
+	setStageAnimation(wave0animation, 64, enemyCharacter0.object, 0.2, 0, 6, moveStopMove, &was);
+	setStageAnimation(wave0childAnimation, 16, enemyCharacter0.childObject, 0.1, 0, 6, circleCircleCircle, &radius);
+
+
+	was.exponent = 3.0;
+	was.stopRatio= 27.0;
+	was.xCenter  = WINDOW_WIDTH/2.0+100;
+	was.yStart   = WINDOW_HEIGHT+70.0;
+	was.yLength  = -800.0;
+	was.indexoffset = 3.0;
+
+	setStageAnimation(wave1animation, 64, enemyCharacter0.object, 0.2, 6, 12, moveStopMove, &was);
+	setStageAnimation(wave1childAnimation, 16, enemyCharacter0.childObject, 0.1, 6, 12, circleCircleCircle, &radius);
+
+	was.exponent = 3.0;
+	was.stopRatio= 16.0;
+	was.xCenter  = WINDOW_WIDTH/2.0+200;
+	was.yStart   = WINDOW_HEIGHT/2.0;
+	was.yLength  = 300.0;
+	was.indexoffset = 1.6;
+
+	setStageAnimation(wave2animation, 64, enemyCharacter0.object, 0.2, 0, 8, moveStopMove, &was);
+	setStageAnimation(wave2childAnimation, 16, enemyCharacter0.childObject, 0.1, 0, 8, circleCircleCircle, &radius);
+
+	was.exponent = 3.0;
+	was.stopRatio= 50.0;
+	was.xCenter  = WINDOW_WIDTH/2.0+300;
+	was.yStart   = -400;
+	was.yLength  = 800.0;
+	was.indexoffset = 2;
+
+	setStageAnimation(wave3animation, 64, enemyCharacter0.object, 0.2, 8, 16, moveStopMove, &was);
+	setStageAnimation(wave3childAnimation, 16, enemyCharacter0.childObject, 0.1, 8, 16, circleCircleCircle, &radius);
+
+	was.exponent = 3.0;
+	was.stopRatio= 16.0;
+	was.xCenter  = WINDOW_WIDTH/2.0+200;
+	was.yStart   = WINDOW_HEIGHT+500;
+	was.yLength  = -600.0;
+	was.indexoffset = 0.5;
+
+	radius = 20;
+
+	setStageAnimation(wave4animation, 64, enemyCharacter0.object, 0.2, 16, 24, moveStopMoveStraight, &was);
+	setStageAnimation(wave4childAnimation, 16, enemyCharacter0.childObject, 0.1, 16, 24, circleCircleCircle, &radius);
 }
 
 void stage0_update()
 {
 	double st;
+	double spf;
 	Timer_get_count(stage0Timer, &st);
+	Timer_get_spf(stage0Timer, &spf);
 
-	const double enemyWaveInterval = 50.0;
-	const double enemyWaveWidth = 60.0;
-	const int enemyWave0num = 8;
+	const double stage0appear = 0.01;
+	static bool stage0v = false;
+
+	const double enemyWave0start = 1.0;
+	const double enemyWave0length = 12.8;
 	static bool enemyWave0 = false;
 
+	const double enemyWave1start = 6.0;
+	const double enemyWave1length = 12.8;
+	static bool enemyWave1 = false;
+
+	const double enemyFollow0start = 10.0;
+	const double enemyFollow0length = 100.0;
+	static bool enemyFollow0 = false;
+
+	const double enemyFollow1start = 13.0;
+	const double enemyFollow1length = 100.0;
+	static bool enemyFollow1 = false;
+
+	const double enemyWave2start = 20.0;
+	const double enemyWave2length = 12.8;
+	static bool enemyWave2 = false;
+
+	const double enemyWave3start = 25.0;
+	const double enemyWave3length = 12.8;
+	static bool enemyWave3 = false;
+
+	const double enemyFollow2start = 30.0;
+	const double enemyFollow2length = 100.0;
+	static bool enemyFollow2 = false;
+
+	const double enemyWave4start = 35.0;
+	const double enemyWave4length = 12.0;
+	static bool enemyWave4 = false;
+
+
 	Vector2D v;
+	v.x = WINDOW_WIDTH + 200;
+	v.y = WINDOW_HEIGHT / 2;
+	if(Keyboard_is_pressed('u'))
+		addPowerupCore(&v, POWERUPCORE_SPEEDUP_TAG);
 
-	if(enemyWave0 == true)
-	{
-		Animation2D_play(wave0childAnimation);
-		Animation2D_play(wave0animation);
-	}
+	if(enemyWave0 == true){Animation2D_play(wave0childAnimation);
+			       Animation2D_play(wave0animation);}
 
-	if(enemyWave0 == false && st > 5.0)
-	{
-		v.x = 2000;
-		v.y = 0;
-		for(int i = 0; i < enemyWave0num; i++)
-		{
-			addEnemyCharacter0(&v);
-		}
-		enemyWave0 = true;
-	}		
-	if(st > 13+5)
-	{
-		enemyWave0 = false;
-	}
+	if(enemyWave1 == true){Animation2D_play(wave1childAnimation);
+			       Animation2D_play(wave1animation);}
+
+	if(enemyWave2 == true){Animation2D_play(wave2childAnimation);
+			       Animation2D_play(wave2animation);}
+
+	if(enemyWave3 == true){Animation2D_play(wave3childAnimation);
+			       Animation2D_play(wave3animation);}
+
+	if(enemyWave4 == true){Animation2D_play(wave4childAnimation);
+			       Animation2D_play(wave4animation);}
+
+	// wave 0 
+	if(enemyWave0 == false && st > enemyWave0start && st < enemyWave0start + enemyWave0length) {addEnemyCharacter0(&v, 0, 6); enemyWave0 = true;}		
+	if(st > enemyWave0start + enemyWave0length){enemyWave0 = false;Animation2D_reset(wave0animation);Animation2D_reset(wave0childAnimation);}
+
+	// wave 1 
+	if(enemyWave1 == false && st > enemyWave1start && st < enemyWave1start + enemyWave1length) {addEnemyCharacter0(&v, 6, 12); enemyWave1 = true;}		
+	if(st > enemyWave1start + enemyWave1length){enemyWave1 = false;Animation2D_reset(wave1animation);Animation2D_reset(wave1childAnimation);}
+
+	// follow 0 
+	v.y = 100;
+	if(enemyFollow0 == false && st > enemyFollow0start && st < enemyFollow0start + enemyFollow0length) {addEnemyCharacter1(&v, 100, 0, 2); enemyFollow0 = true;}		
+	if(st > enemyFollow0start + enemyFollow0length){enemyFollow0 = false;}
+
+	// follow 1
+	v.y = WINDOW_HEIGHT - 100;
+	if(enemyFollow1 == false && st > enemyFollow1start && st < enemyFollow1start + enemyFollow1length) {addEnemyCharacter1(&v, -100, 2, 4); enemyFollow1 = true;}		
+	if(st > enemyFollow1start + enemyFollow1length){enemyFollow1 = false;}
+
+	v.x = WINDOW_WIDTH + 200;
+	v.y = WINDOW_HEIGHT / 2;
+	// wave 2 
+	if(enemyWave2 == false && st > enemyWave2start && st < enemyWave2start + enemyWave2length) {addEnemyCharacter0(&v, 0, 8); enemyWave2 = true;DPIF(false,"w2\n");}		
+	if(st > enemyWave2start + enemyWave2length){enemyWave2 = false;Animation2D_reset(wave2animation);Animation2D_reset(wave2childAnimation);}
+
+	// wave 3 
+	if(enemyWave3 == false && st > enemyWave3start && st < enemyWave3start + enemyWave3length) {addEnemyCharacter0(&v, 8, 16); enemyWave3 = true;DPIF(false,"w3\n");}		
+	if(st > enemyWave3start + enemyWave3length){enemyWave3 = false;Animation2D_reset(wave3animation);Animation2D_reset(wave3childAnimation);}
+
+	// stage 
+	stage0->transform->position.x -= stage0_moving_speed*spf;
+
+	if(st > stage0appear && stage0v == false){Object_set_valid(stage0); stage0v = true;}
+
+	// follow 2
+	v.y = 0;
+	if(enemyFollow2 == false && st > enemyFollow2start && st < enemyFollow2start + enemyFollow2length) {addEnemyCharacter1(&v, 50, 4, 6); enemyFollow2 = true;}		
+	if(st > enemyFollow2start + enemyFollow2length){enemyFollow2 = false;}
+
+	v.y = WINDOW_HEIGHT / 2;
+	// wave 4 
+	if(enemyWave4 == false && st > enemyWave4start && st < enemyWave4start + enemyWave4length) {addEnemyCharacter0(&v, 16, 24); enemyWave4 = true;DPIF(true,"w4\n");}		
+	if(st > enemyWave4start + enemyWave4length){enemyWave4 = false;Animation2D_reset(wave4animation);Animation2D_reset(wave4childAnimation);}
+
 }
 
-// wave
-void stage0_initWave0animation()
-{
-	const int wave0interval = 50;
-	Vector2D v;
-	// frame 0
 
-	for(int f = 0; f < 64; f++) // 64 * 0.2 : 12.8
+void moveStopMove(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct)
+{
+	Vector2D v;
+	struct waveargstruct* was = (struct waveargstruct *)waveArgStruct;
+
+	// calc here       (ex. x = cos(f)*10, y = sin(f)*20
+	// !!! (f+i) !!!
+	
+	double t = (( f - fmax/2.0 ) + ( (i+6) - imax/2.0)/was->indexoffset) * 0.5;
+
+	v.x = was->xCenter -
+		(
+		 	pow(t, was->exponent) - was->stopRatio*t
+		);
+
+	t = (((double)f/fmax) + ((double)i/imax)/was->indexoffset);
+
+	v.y = was->yStart +
+		(
+		 	// !!!!! 0 < t < 1 !!!!!
+			(-2.0*pow(t, 3.0) + 3.0*pow(t, 2.0)) * was->yLength
+			//sin(t) * was->yLength
+		);
+
+	Vector2D_set(ret, &v);
+}
+
+void circleCircleCircle(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* radiusd)
+{
+	// calc here       (ex. x = cos(f)*10, y = sin(f)*20
+	// !!! (f+i) !!!
+	Vector2D v;
+	double t = (f / 8.0 * M_PI) + ( i / 2.0 );
+
+	v.x =
+		(
+		 	cos(t) * *(double*)radiusd
+		);
+
+	v.y =
+		(
+			sin(t) * *(double*)radiusd
+		);
+	Vector2D_set(ret, &v);
+}
+
+void moveStopMoveStraight(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct)
+{
+	Vector2D v;
+	struct waveargstruct* was = (struct waveargstruct *)waveArgStruct;
+
+	// calc here       (ex. x = cos(f)*10, y = sin(f)*20
+	// !!! (f+i) !!!
+	
+	double t = (( f - fmax/2.0 )) * 0.4;
+
+	v.x = was->xCenter -
+		(
+		 	pow(t, was->exponent) - was->stopRatio*t
+		);
+
+	t = (((double)i/imax)/was->indexoffset);
+
+	v.y = was->yStart +
+		(
+		 	// !!!!! 0 < t < 1 !!!!!
+			(double)was->yLength*t
+			//sin(t) * was->yLength
+		);
+
+	Vector2D_set(ret, &v);
+}
+
+
+void setStageAnimation(Animation2D* const anm, const int fnum, Object** const object, const double framelength, const int istart, const int iend, void func(Vector2D*, int, int, int, int, int , double, void*), void* arg)
+{
+	for(int f = 0; f < fnum; f++) // 64 * 0.2 : 12.8
 	{
-		Animation2D_add_frame(wave0animation);
-		Animation2D_set_frame_length(wave0animation, f, 0.2);// every 0.2 second
+		Animation2D_add_frame(anm);
+		Animation2D_set_frame_length(anm, f, framelength);// every 0.2 second
 		// anm, frame index, varaddr, valaddr, sizeofval, smoothingType
-		for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+		for(int i = istart; i < iend; i++)
 		{
 			// calc here       (ex. x = cos(f)*10, y = sin(f)*20
 			// !!! (f+i) !!!
+		
+			Vector2D v;
+			func(&v, f, i, fnum, istart, iend, framelength, arg);
 			
-			double t = ( f - 32.0 ) / 2.0 + ( i / 2.0 );
-
-			v.x = WINDOW_WIDTH / 2.0 -
-				(
-				 	pow(t, 3.0) - 32.0*t
-				);
-
-			t = (f-10)/64.0 + i/10.0;
-
-			v.y = 300.0 -
-				(
-					(-2.0*pow(t, 3.0) + 3.0*pow(t, 2.0)) * 200.0
-				);
-
-			Animation2D_add_animated_variable(wave0animation, f, &(enemyCharacter0.object[i]->transform->position), &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D);
+			Animation2D_add_animated_variable(anm, f, &(object[i]->transform->position), &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D);
 		}
 	}
+
 }
-
-// circle
-void stage0_initWave0childAnimation()
-{
-	const double radius = 15;
-	Vector2D v;
-	// frame 0
-
-	for(int f = 0; f < 16; f++) // 16 * 0.2 : 1.6
-	{
-		Animation2D_add_frame(wave0childAnimation);
-		Animation2D_set_frame_length(wave0childAnimation, f, 0.1);// every 0.2 second
-		// anm, frame index, varaddr, valaddr, sizeofval, smoothingType
-		for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
-		{
-			// calc here       (ex. x = cos(f)*10, y = sin(f)*20
-			// !!! (f+i) !!!
-			
-			double t = (f / 8.0 * M_PI) + ( i / 2.0 );
-
-			v.x =
-				(
-				 	cos(t) * radius
-				);
-
-			v.y =
-				(
-					sin(t) * radius
-				);
-
-			Animation2D_add_animated_variable(wave0childAnimation, f, &(enemyCharacter0.childObject[i]->transform->position), &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D);
-		}
-	}
-}
-

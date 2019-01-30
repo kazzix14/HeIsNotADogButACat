@@ -267,3 +267,9 @@ void Animation2D_play(Animation2D* const p_this)
 			p_this->pv->current_frame++;
 	}
 }
+
+void Animation2D_reset(Animation2D* const this)
+{
+	Timer_reset_count(this->pv->timer);
+	this->pv->current_frame = 0;
+}

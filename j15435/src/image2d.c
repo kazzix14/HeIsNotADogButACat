@@ -103,7 +103,7 @@ void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 			y = -h/2;
 	}
 
-	//View_begin_2d(view);
+	//View_begin(view);
 
 	Transform2D* t = p_this->p_transform;
 	glTranslated(position->x, position->y, 0.0f);
