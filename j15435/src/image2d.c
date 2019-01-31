@@ -17,6 +17,7 @@
 #include "debug.h"
 #include "transform2d.h"
 #include "image2d.h"
+#include "view.h"
 
 static struct everyTypeNeedToHaveAPointerToThisStructAtTheHeadOfTheStruct etnthapttsathots =
 {
@@ -103,7 +104,7 @@ void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 			y = -h/2;
 	}
 
-	//View_begin(view);
+	View_begin();
 
 	Transform2D* t = p_this->p_transform;
 	glTranslated(position->x, position->y, 0.0f);
@@ -136,7 +137,7 @@ void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 	
 	glDisable(GL_TEXTURE_2D);
 
-	//View_end();
+	View_end();
 }
 
 void Image2D_get_size(const Image2D* p_this, Vector2D* const p_rtrn)

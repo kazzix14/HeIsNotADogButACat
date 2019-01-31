@@ -462,8 +462,11 @@ void mouse(int b, int s, int x, int y)
 
 void keyboard()
 {
-	if(Keyboard_is_down(27))
+	if(Keyboard_is_pressed(27))
 		exit(0);
+
+	if(Keyboard_is_down('m'))
+		sphinx.jaw->transform->rotation.w += 3;
 	/*
 	if(rand() % 70)
 	{
@@ -844,6 +847,28 @@ void initSphinx()
 	sphinx.jaw = Object_new();
 	sphinx.eye = Object_new();
 
+	Object* bd;
+	Object* ul;
+	Object* ll;
+	Object* ua;
+	Object* la;
+	Object* hd;
+	Object* jw;
+	Object* ey;
+	Object* bl;
+
+	bd = Object_new();
+	ul = Object_new();
+	ll = Object_new();
+	ua = Object_new();
+	la = Object_new();
+	hd = Object_new();
+	hd = Object_new();
+	jw = Object_new();
+	ey = Object_new();
+	bl = Object_new();
+
+
 	sphinx.timer = Timer_new();
 
 	sphinx.aPunch = Audio_new(2);
@@ -876,14 +901,6 @@ void initSphinx()
 	ijw = Image2D_new();
 	iey = Image2D_new();
 
-	sphinx.childObject->transform->position.x = 400;
-	sphinx.childObject->transform->position.y = 400;
-
-	ihd->p_transform->position.x = -90;
-	ihd->p_transform->position.y = -110;
-	sphinx.head->transform->position.x = 90;
-	sphinx.head->transform->position.y = 110;
-	
 	Image2D_load(ibd, "resource/image/enemy/boss/body.png");
 	Image2D_load(iul, "resource/image/enemy/boss/uleg.png");
 	Image2D_load(ill, "resource/image/enemy/boss/lleg.png");
@@ -959,6 +976,9 @@ void initSphinx()
 	Vector2D_set_zero(&(eyrc->position));
 	Vector2D_set_zero(&(blrc->position));
 
+	sphinx.childObject->transform->position.x = 400;
+	sphinx.childObject->transform->position.y = 400;
+
 	bdrc->size.x = 25;
 	bdrc->size.y = 25;
 
@@ -973,28 +993,38 @@ void initSphinx()
 
 	larc->size.x = 25;
 	larc->size.y = 25;
-
-	hdrc->size.x = 25;
-	bdrc->size.y = 25;
 	
-	jwrc->size.x = 25;
-	jwrc->size.y = 25;
 
-	eyrc->size.x = 25;
-	eyrc->size.y = 25;
+	hdrc->size.x = 61;
+	hdrc->size.y = 70;
+
+	sphinx.head->transform->rotation.z = 1;
+	ihd->p_transform->position.x = -90;
+	ihd->p_transform->position.y = -110;
+	sphinx.head->transform->position.x = 90;
+	sphinx.head->transform->position.y = 110;
+	hd->transform->position.x = -50;
+	hd->transform->position.y = -80;
+	
+	sphinx.jaw->transform->rotation.z = 1;
+	jwrc->size.x = 30;
+	jwrc->size.y = 10;
+	ijw->p_transform->position.x = -90;
+	ijw->p_transform->position.y = -110;
+	jw->transform->position.x = -55;
+	jw->transform->position.y = -11;
+	jw->transform->rotation.z = 1;
+	jw->transform->rotation.w = -25;
+
+	eyrc->size.x = 10;
+	eyrc->size.y = 9;
+	iey->p_transform->position.x = -89.5;
+	iey->p_transform->position.y = -110.5;
+	ey->transform->position.x = -51;
+	ey->transform->position.y = -54;
 
 	blrc->size.x = 25;
 	blrc->size.y = 25;
-
-	Object_add_component(sphinx.body, sphinx.bdcol);
-	Object_add_component(sphinx.body, sphinx.blcol);
-	Object_add_component(sphinx.uleg, sphinx.ulcol);
-	Object_add_component(sphinx.lleg, sphinx.llcol);
-	Object_add_component(sphinx.uarm, sphinx.uacol);
-	Object_add_component(sphinx.larm, sphinx.lacol);
-	Object_add_component(sphinx.head, sphinx.hdcol);
-	Object_add_component(sphinx.jaw, sphinx.jwcol);
-	Object_add_component(sphinx.eye, sphinx.eycol);
 
 	Object_add_component(sphinx.body, ibd);
 	Object_add_component(sphinx.uleg, iul);
@@ -1004,6 +1034,26 @@ void initSphinx()
 	Object_add_component(sphinx.head, ihd);
 	Object_add_component(sphinx.jaw, ijw);
 	Object_add_component(sphinx.eye, iey);
+
+	Object_add_component(bd, sphinx.bdcol);
+	Object_add_component(bl, sphinx.blcol);
+	Object_add_component(ul, sphinx.ulcol);
+	Object_add_component(ll, sphinx.llcol);
+	Object_add_component(ua, sphinx.uacol);
+	Object_add_component(la, sphinx.lacol);
+	Object_add_component(hd, sphinx.hdcol);
+	Object_add_component(jw, sphinx.jwcol);
+	Object_add_component(ey, sphinx.eycol);
+
+	Object_add_component(sphinx.body, bd);
+	Object_add_component(sphinx.body, bl);
+	Object_add_component(sphinx.uleg, ul);
+	Object_add_component(sphinx.lleg, ll);
+	Object_add_component(sphinx.uarm, ua);
+	Object_add_component(sphinx.larm, la);
+	Object_add_component(sphinx.head, hd);
+	Object_add_component(sphinx.jaw,  jw);
+	Object_add_component(sphinx.eye,  ey);
 
 	Object_add_component(sphinx.body, sphinx.uleg);
 	Object_add_component(sphinx.uleg, sphinx.lleg);
@@ -1018,7 +1068,6 @@ void initSphinx()
 	Object_add_component(sphinx.childObject, sphinx.body);
 	Object_add_component(sphinx.masterObject, sphinx.childObject);
 
-	sphinx.head->transform->rotation.z = 1;
 }
 
 
@@ -1031,7 +1080,7 @@ void moveSphinx()
 	Vector2D_sub(&v, &sphinx.head->transform->position);
 	sphinx.head->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
 	
-	if(rand()%100 == 0)
+	if(rand()%80 == 0)
 	{
 		Vector2D v2;
 		Vector2D_set(&v2, &sphinx.childObject->transform->position);
