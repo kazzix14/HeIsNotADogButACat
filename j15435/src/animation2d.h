@@ -16,7 +16,10 @@
 
 #define ANIMATION_NO_SMOOTHING 0
 #define ANIMATION_LINER_SMOOTHING_FOR_DOUBLE 1
-#define ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D 2
+#define ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE 2
+#define ANIMATION_LINER_SMOOTHING_FOR_VECTOR2D 3
+#define ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D 4
+#define ANIMATION_USE_FUNCCTION 100
 
 #include "transform2d.h"
 #include "vector2d.h"
@@ -39,6 +42,7 @@ void Animation2D_add_animated_variable(Animation2D* const, const unsigned int, v
 void Animation2D_play(Animation2D* const);
 void Animation2D_set_frame_time(Animation2D* const, const unsigned int, const unsigned int);
 void Animation2D_put_with_offset(const Animation2D*, const Vector2D*);
+void Animation2D_get_length(Animation2D* const, double* const);
 void Animation2D_reset(Animation2D* const);
 
 #endif

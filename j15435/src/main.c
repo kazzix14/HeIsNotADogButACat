@@ -64,12 +64,16 @@
 #define POWERUPCORE_DEFAULT_SPEED 100
 #define POWERUPCORE_OBTAIN_SPEED 20
 #define POWERUPCORE_SPEEDUP_TAG "pusp"
+
 #define BACKGROUND1_SPEED 30
 #define BACKGROUND2_SPEED 60
 #define BACKGROUND3_SPEED 100
 
 #define DESTROY_EFFECT_FADETIME 0.15
 #define DESTROY_EFFECT_NUM 64
+
+#define SPHINX_DEFAULT_HP1 127
+#define SPHINX_DEFAULT_HP2 127
 
 typedef struct playerbullet0 PlayerBullet0;
 typedef struct enemybullet0 EnemyBullet0;
@@ -144,8 +148,13 @@ typedef struct boss0
 	Object* uarm;
 	Object* larm;
 	Object* head;
+	Object* headp;
 	Object* jaw;
 	Object* eye;
+
+	Object* lazer;
+	Object* lazerFX;
+
 
 	Collider2D* bdcol;
 	Collider2D* ulcol;
@@ -156,6 +165,8 @@ typedef struct boss0
 	Collider2D* jwcol;
 	Collider2D* eycol;
 	Collider2D* blcol;
+
+	Collider2D* lzcol;
 
 	Timer* timer;
 
@@ -302,6 +313,7 @@ EnemyBullet0 enemyBullet0;
 PowerupCore powerupCore;
 DestroyEffect destroyEffect0;;
 Boss0 sphinx;
+
 
 Object* backbase;
 Object* back1;
@@ -462,8 +474,15 @@ void mouse(int b, int s, int x, int y)
 
 void keyboard()
 {
-	if(Keyboard_is_down(27))
+	if(Keyboard_is_pressed(27))
 		exit(0);
+
+	if(Keyboard_is_down(','))
+		sphinx.uarm->transform->rotation.w += 3;
+	if(Keyboard_is_down('m'))
+		sphinx.larm->transform->rotation.w += 3;
+	if(Keyboard_is_down('n'))
+		sphinx.body->transform->rotation.w += 3;
 	/*
 	if(rand() % 70)
 	{
@@ -570,7 +589,7 @@ void setColliderLayerMatrix()
 	// 10 -> powercore
 	// 20 -> terrain
 	// 6 -> sphinx
-	// 6 -> sphinx
+	// 5 -> sphinx lazer
 
 	char lm[] = {
 	//	0  1  2  3  4  5  6  7  8  9  10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30 31	
@@ -582,16 +601,16 @@ void setColliderLayerMatrix()
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
-		1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 
+		1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
+		1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
+		1, 1, 1, 1, 1, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 
-		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 
+		1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
@@ -600,8 +619,8 @@ void setColliderLayerMatrix()
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 1, 1, 1, 1, 
-		1, 1, 1, 1, 1, 1, 0, 
-		1, 1, 1, 1, 1, 1, 
+		1, 1, 1, 1, 1, 0, 0, 
+		1, 1, 1, 1, 1, 0, 
 		1, 1, 1, 1, 1, 
 		1, 1, 1, 1, 
 		1, 1, 1, 
@@ -649,7 +668,7 @@ void initPlayerBullet0()
 	playerBullet0.timer = Timer_new();
 	playerBullet0.masterObject = Object_new();
 	playerBullet0.image0 = Image2D_new();
-	playerBullet0.audioShot = Audio_new(PLAYER_CHARACTER_BULLET_NUM);
+	playerBullet0.audioShot = Audio_new(PLAYER_CHARACTER_BULLET_NUM*2);
 	
 	Image2D_load(playerBullet0.image0, "resource/image/player/bullet/0.png");
 	Audio_load(playerBullet0.audioShot, "resource/audio/player/bullet/shot0.wav");
@@ -826,11 +845,17 @@ void movePlayerBullet0()
 		}
 	}
 }
-	//Image2D_load(enemyCharacter0.destroyImage, "resource/image/enemy/plane/destroy.png");
+
+Animation2D* bossStandUpAnim;
+Animation2D* bossPunch;
+Animation2D* bossHead;
+Animation2D* bossLazer;
+
 void initSphinx()
 {
-	sphinx.hp1 = 100;
-	sphinx.hp2 = 100;
+
+	sphinx.hp1 = SPHINX_DEFAULT_HP1;
+	sphinx.hp2 = SPHINX_DEFAULT_HP2;
 
 	sphinx.masterObject = Object_new();
 	sphinx.childObject = Object_new();
@@ -841,8 +866,35 @@ void initSphinx()
 	sphinx.uarm = Object_new();
 	sphinx.larm = Object_new();
 	sphinx.head = Object_new();
+	sphinx.headp= Object_new();
 	sphinx.jaw = Object_new();
 	sphinx.eye = Object_new();
+	sphinx.lazer = Object_new();
+
+	Object* bd;
+	Object* ul;
+	Object* ll;
+	Object* ua;
+	Object* la;
+	Object* hd;
+	Object* jw;
+	Object* ey;
+	Object* bl;
+
+	Object* lz;
+
+	bd = Object_new();
+	ul = Object_new();
+	ll = Object_new();
+	ua = Object_new();
+	la = Object_new();
+	hd = Object_new();
+	hd = Object_new();
+	jw = Object_new();
+	ey = Object_new();
+	bl = Object_new();
+	lz = Object_new();
+
 
 	sphinx.timer = Timer_new();
 
@@ -866,6 +918,7 @@ void initSphinx()
 	Image2D* ihd;
 	Image2D* ijw;
 	Image2D* iey;
+	Image2D* ilz;
 
 	ibd = Image2D_new();
 	iul = Image2D_new();
@@ -875,15 +928,8 @@ void initSphinx()
 	ihd = Image2D_new();
 	ijw = Image2D_new();
 	iey = Image2D_new();
+	ilz = Image2D_new();
 
-	sphinx.childObject->transform->position.x = 400;
-	sphinx.childObject->transform->position.y = 400;
-
-	ihd->p_transform->position.x = -90;
-	ihd->p_transform->position.y = -110;
-	sphinx.head->transform->position.x = 90;
-	sphinx.head->transform->position.y = 110;
-	
 	Image2D_load(ibd, "resource/image/enemy/boss/body.png");
 	Image2D_load(iul, "resource/image/enemy/boss/uleg.png");
 	Image2D_load(ill, "resource/image/enemy/boss/lleg.png");
@@ -892,6 +938,7 @@ void initSphinx()
 	Image2D_load(ihd, "resource/image/enemy/boss/head.png");
 	Image2D_load(ijw, "resource/image/enemy/boss/jaw.png");
 	Image2D_load(iey, "resource/image/enemy/boss/eye.png");
+	Image2D_load(ilz, "resource/image/enemy/boss/lazer.png");
 
 	//Audio_load(aPunch, "resource/audio/enemy/boss/0.wav");
 	//Audio_load(aMao, "resource/audio/enemy/boss/0.wav");
@@ -908,6 +955,7 @@ void initSphinx()
 	sphinx.jwcol = Collider2D_new();
 	sphinx.eycol = Collider2D_new();
 	sphinx.blcol = Collider2D_new();
+	sphinx.lzcol = Collider2D_new();
 
 	strncpy(sphinx.bdcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
 	strncpy(sphinx.ulcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
@@ -918,6 +966,7 @@ void initSphinx()
 	strncpy(sphinx.jwcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
 	strncpy(sphinx.eycol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
 	strncpy(sphinx.blcol->tag, "spnx", COLLIDER2D_TAG_LENGTH);
+	strncpy(sphinx.lzcol->tag, "spxl", COLLIDER2D_TAG_LENGTH);
 
 	Collider2D_set_collider_object(sphinx.bdcol, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(sphinx.ulcol, COLLIDER2D_COLLIDER_RECT);
@@ -928,6 +977,7 @@ void initSphinx()
 	Collider2D_set_collider_object(sphinx.jwcol, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(sphinx.eycol, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(sphinx.blcol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(sphinx.lzcol, COLLIDER2D_COLLIDER_RECT);
 
 	Collider2D_register_collider(sphinx.bdcol, 6);
 	Collider2D_register_collider(sphinx.ulcol, 6);
@@ -938,6 +988,7 @@ void initSphinx()
 	Collider2D_register_collider(sphinx.jwcol, 6);
 	Collider2D_register_collider(sphinx.eycol, 6);
 	Collider2D_register_collider(sphinx.blcol, 6);
+	Collider2D_register_collider(sphinx.lzcol, 5);
 
 	RectCollider* bdrc = (RectCollider*)(sphinx.bdcol->colObj);
 	RectCollider* ulrc = (RectCollider*)(sphinx.ulcol->colObj);
@@ -948,6 +999,7 @@ void initSphinx()
 	RectCollider* jwrc = (RectCollider*)(sphinx.jwcol->colObj);
 	RectCollider* eyrc = (RectCollider*)(sphinx.eycol->colObj);
 	RectCollider* blrc = (RectCollider*)(sphinx.blcol->colObj);
+	RectCollider* lzrc = (RectCollider*)(sphinx.lzcol->colObj);
 
 	Vector2D_set_zero(&(bdrc->position));
 	Vector2D_set_zero(&(ulrc->position));
@@ -958,88 +1010,459 @@ void initSphinx()
 	Vector2D_set_zero(&(jwrc->position));
 	Vector2D_set_zero(&(eyrc->position));
 	Vector2D_set_zero(&(blrc->position));
+	Vector2D_set_zero(&(lzrc->position));
 
-	bdrc->size.x = 25;
-	bdrc->size.y = 25;
+
+	bdrc->size.x = 189;
+	bdrc->size.y = 74;
+	sphinx.body->transform->rotation.z = 1;
+	ibd->p_transform->position.x = -260;
+	ibd->p_transform->position.y = -170;
+	sphinx.body->transform->position.x = 0;
+	sphinx.body->transform->position.y = -32;
+	sphinx.body->transform->rotation.z = 1;
+	bd->transform->position.x = -180;
+	bd->transform->position.y = -65;
 
 	ulrc->size.x = 25;
-	ulrc->size.y = 25;
+	ulrc->size.y = 45;
+	sphinx.uleg->transform->position.x = 2;
+	sphinx.uleg->transform->position.y = -40;
+	sphinx.uleg->transform->rotation.z = 1;
+	iul->p_transform->rotation.z = 1;
+	iul->p_transform->rotation.w = 210;
+	iul->p_transform->position.x = 130;
+	iul->p_transform->position.y = 250;
+	ul->transform->position.x = -12;
+	ul->transform->position.y = -32;
 
 	llrc->size.x = 25;
-	llrc->size.y = 25;
+	llrc->size.y = 49;
+	//sphinx.lleg->transform->position.x = 37;
+	//sphinx.lleg->transform->position.y = 0;
+	sphinx.lleg->transform->rotation.z = 1;
+	ill->p_transform->position.x = -165;
+	ill->p_transform->position.y = -250;
+	ill->p_transform->rotation.z = 1;
+	ill->p_transform->rotation.w = 20;
+	ll->transform->position.x = -10;
+	ll->transform->position.y = -39;
 
-	uarc->size.x = 25;
+	uarc->size.x = 70;
 	uarc->size.y = 25;
+	sphinx.uarm->transform->rotation.z = 1;
+	sphinx.uarm->transform->position.x = 98-260;
+	sphinx.uarm->transform->position.y = 170-170;
+	ua->transform->position.x = -12;
+	ua->transform->position.y = -12;
+	iua->p_transform->position.x = -153;
+	iua->p_transform->position.y = -105;
+	iua->p_transform->rotation.z = 1;
+	iua->p_transform->rotation.w = -22;
 
-	larc->size.x = 25;
+	larc->size.x = 130;
 	larc->size.y = 25;
-
-	hdrc->size.x = 25;
-	bdrc->size.y = 25;
+	sphinx.larm->transform->rotation.z = 1-260;
+	sphinx.larm->transform->position.x = 50;
+	sphinx.larm->transform->position.y = 0;
+	ila->p_transform->position.x = -147;
+	ila->p_transform->position.y = -172;
+	la->transform->position.x = -122;
+	la->transform->position.y = -5;
 	
-	jwrc->size.x = 25;
-	jwrc->size.y = 25;
+	hdrc->size.x = 61;
+	hdrc->size.y = 72;
+	sphinx.head->transform->rotation.z = 1;
+	sphinx.headp->transform->rotation.z = 1;
+	ihd->p_transform->position.x = -90;
+	ihd->p_transform->position.y = -110;
+	sphinx.headp->transform->position.x = 90-260;
+	sphinx.headp->transform->position.y = 110-170;
+	hd->transform->position.x = -46;
+	hd->transform->position.y = -80;
+	hd->transform->rotation.z = 1;
+	hd->transform->rotation.w = 8;
+	
+	jwrc->size.x = 30;
+	jwrc->size.y = 10;
+	sphinx.jaw->transform->rotation.z = 1;
+	ijw->p_transform->position.x = -90;
+	ijw->p_transform->position.y = -110;
+	jw->transform->position.x = -55;
+	jw->transform->position.y = -11;
+	jw->transform->rotation.z = 1;
+	jw->transform->rotation.w = -25;
 
-	eyrc->size.x = 25;
-	eyrc->size.y = 25;
+	eyrc->size.x = 10;
+	eyrc->size.y = 9;
+	iey->p_transform->position.x = -89.5;
+	iey->p_transform->position.y = -110.5;
+	ey->transform->position.x = -51;
+	ey->transform->position.y = -54;
 
 	blrc->size.x = 25;
 	blrc->size.y = 25;
+	bl->transform->position.x = -20;
+	bl->transform->position.y = -6;
 
-	Object_add_component(sphinx.body, sphinx.bdcol);
-	Object_add_component(sphinx.body, sphinx.blcol);
-	Object_add_component(sphinx.uleg, sphinx.ulcol);
-	Object_add_component(sphinx.lleg, sphinx.llcol);
-	Object_add_component(sphinx.uarm, sphinx.uacol);
-	Object_add_component(sphinx.larm, sphinx.lacol);
-	Object_add_component(sphinx.head, sphinx.hdcol);
-	Object_add_component(sphinx.jaw, sphinx.jwcol);
-	Object_add_component(sphinx.eye, sphinx.eycol);
+	lzrc->size.x = WINDOW_WIDTH;
+	lzrc->size.y = 5;
+	lz->transform->rotation.z = 1;
+	lz->transform->rotation.w = 180;
+	lz->transform->position.y = -47;
+	ilz->p_transform->scale.x = 10;
+	ilz->p_transform->rotation.z = 1;
+	ilz->p_transform->rotation.w = 180;
+	ilz->p_transform->position.y = 27;
+	ilz->p_transform->position.x = -50;
+
+	sphinx.body->transform->rotation.w = -150;
+	sphinx.uleg->transform->rotation.w = 180;
+	sphinx.lleg->transform->rotation.w = -30;
 
 	Object_add_component(sphinx.body, ibd);
-	Object_add_component(sphinx.uleg, iul);
-	Object_add_component(sphinx.lleg, ill);
 	Object_add_component(sphinx.uarm, iua);
 	Object_add_component(sphinx.larm, ila);
-	Object_add_component(sphinx.head, ihd);
 	Object_add_component(sphinx.jaw, ijw);
 	Object_add_component(sphinx.eye, iey);
+	Object_add_component(sphinx.lazer, ilz);
 
-	Object_add_component(sphinx.body, sphinx.uleg);
-	Object_add_component(sphinx.uleg, sphinx.lleg);
+	Object_add_component(bd, sphinx.bdcol);
+	Object_add_component(bl, sphinx.blcol);
+	Object_add_component(ul, sphinx.ulcol);
+	Object_add_component(ll, sphinx.llcol);
+	Object_add_component(ua, sphinx.uacol);
+	Object_add_component(la, sphinx.lacol);
+	Object_add_component(hd, sphinx.hdcol);
+	Object_add_component(jw, sphinx.jwcol);
+	Object_add_component(ey, sphinx.eycol);
+	Object_add_component(lz, sphinx.lzcol);
+
+	Object_add_component(sphinx.body, bd);
+	Object_add_component(sphinx.body, bl);
+	Object_add_component(sphinx.uarm, ua);
+	Object_add_component(sphinx.larm, la);
+	Object_add_component(sphinx.jaw,  jw);
+	Object_add_component(sphinx.eye,  ey);
+	Object_add_component(sphinx.lazer,  lz);
+
+	Object_add_component(sphinx.uleg, sphinx.body);
+	Object_add_component(sphinx.lleg, sphinx.uleg);
 
 	Object_add_component(sphinx.body, sphinx.uarm);
 	Object_add_component(sphinx.uarm, sphinx.larm);
 
-	Object_add_component(sphinx.body, sphinx.head);
+	Object_add_component(sphinx.headp, sphinx.head);
+	Object_add_component(sphinx.body, sphinx.headp);
 	Object_add_component(sphinx.head, sphinx.jaw);
 	Object_add_component(sphinx.head, sphinx.eye);
+	Object_add_component(sphinx.head, ihd);
+	Object_add_component(sphinx.head, hd);
+	Object_add_component(sphinx.head, sphinx.lazer);
+	Object_add_component(sphinx.uleg, iul);
+	Object_add_component(sphinx.lleg, ill);
+	Object_add_component(sphinx.uleg, ul);
+	Object_add_component(sphinx.lleg, ll);
 
-	Object_add_component(sphinx.childObject, sphinx.body);
+	Object_add_component(sphinx.childObject, sphinx.lleg);
 	Object_add_component(sphinx.masterObject, sphinx.childObject);
 
-	sphinx.head->transform->rotation.z = 1;
+
+
+	double neww;
+	Vector2D v;
+
+	Object_set_invalid(sphinx.lazer);
+
+	sphinx.childObject->transform->position.x = 850;
+	sphinx.childObject->transform->position.y = WINDOW_HEIGHT - 50;
+
+	bossStandUpAnim = Animation2D_new();
+	bossPunch = Animation2D_new();
+	bossHead = Animation2D_new();
+	bossLazer = Animation2D_new();
+
+	/////////////////////////////////// lazer
+	// frame 0 init
+	Animation2D_add_frame(bossLazer);
+	Animation2D_set_frame_length(bossLazer, 0, 0);
+	Animation2D_add_animated_variable(bossLazer, 0, &Object_set_invalid, &sphinx.lazer, sizeof(void *), ANIMATION_USE_FUNCCTION);
+
+	//////////////////////////////////// head rot
+	// frame 0
+	Animation2D_add_frame(bossHead);
+	Animation2D_set_frame_length(bossHead, 0, 1);
+	neww = 0;
+	Animation2D_add_animated_variable(bossHead, 0, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	// frame 1
+	Animation2D_add_frame(bossHead);
+	Animation2D_set_frame_length(bossHead, 1, 1);
+	neww = 8;
+	Animation2D_add_animated_variable(bossHead, 1, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	// frame 2
+	Animation2D_add_frame(bossHead);
+	Animation2D_set_frame_length(bossHead, 2, 1);
+	neww = -5;
+	Animation2D_add_animated_variable(bossHead, 2, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	//////////////////////////////////// standup
+	// frame 0 init
+	Animation2D_add_frame(bossStandUpAnim);
+	Animation2D_set_frame_length(bossStandUpAnim, 0, 0);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.uleg->transform->rotation.w), &(sphinx.uleg->transform->rotation.w), sizeof(double), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.body->transform->rotation.w), &(sphinx.body->transform->rotation.w), sizeof(double), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.uarm->transform->rotation.w), &(sphinx.uarm->transform->rotation.w), sizeof(double), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.larm->transform->rotation.w), &(sphinx.larm->transform->rotation.w), sizeof(double), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.headp->transform->rotation.w), &(sphinx.headp->transform->rotation.w), sizeof(double), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.headp->transform->position), &(sphinx.headp->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossStandUpAnim, 0, &(sphinx.childObject->transform->scale), &(sphinx.childObject->transform->scale), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
+
+	// frame 1
+	Animation2D_add_frame(bossStandUpAnim);
+	Animation2D_set_frame_length(bossStandUpAnim, 1, 3);
+
+
+       	neww = 60;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.uleg->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 50;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.body->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 50;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = -80;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.headp->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	v.x = sphinx.headp->transform->position.x - 20 ;
+	v.y = sphinx.headp->transform->position.y + 12;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.headp->transform->position), &(v), sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	v.x = 1.9;
+	v.y = 1.9;
+	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.childObject->transform->scale), &(v), sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+
+	////////////////////////////////////// punch
+	// frame 0 init
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 0, 0.3);
+	neww = 50;
+	Animation2D_add_animated_variable(bossPunch, 0, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossPunch, 0, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 0, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 1 ready
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 1, 0.8);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 1, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 1, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 1, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	// frame 2 punch 1
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 2, 0.1);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 2, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 90;
+	Animation2D_add_animated_variable(bossPunch, 2, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 3.5;
+	Animation2D_add_animated_variable(bossPunch, 2, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 3 punch 1 end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 3, 0.1);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 3, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 3, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 3, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 4 ready
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 4, 0.1);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 4, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 4, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 4, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	// frame 5 punch 2
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 5, 0.1);
+	neww = 00;
+	Animation2D_add_animated_variable(bossPunch, 5, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 90;
+	Animation2D_add_animated_variable(bossPunch, 5, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 3.5;
+	Animation2D_add_animated_variable(bossPunch, 5, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 6 punch 2 end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 6, 0.1);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 6, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 6, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 6, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 7 ready
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 7, 0.1);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 7, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 7, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 7, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	// frame 8 punch 3
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 8, 0.1);
+	neww = 40;
+	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 90;
+	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 3.2;
+	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 9 punch 3 end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 9, 0.1);
+	neww = -40;
+	Animation2D_add_animated_variable(bossPunch, 9, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 9, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 9, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 10, 0.3);
+	neww = 50;
+	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
 }
 
 
 void moveSphinx()
 {
+	static bool hp10 = false;
+	static bool punch = false;
 	Vector2D v;
-	Vector2D_set(&v, &playerCharacter.object->transform->position);
-	Vector2D_sub(&v, &sphinx.childObject->transform->position);
-	Vector2D_sub(&v, &sphinx.body->transform->position);
-	Vector2D_sub(&v, &sphinx.head->transform->position);
-	sphinx.head->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
-	
-	if(rand()%100 == 0)
+
+	if(hp10 == true)
 	{
-		Vector2D v2;
-		Vector2D_set(&v2, &sphinx.childObject->transform->position);
-		Vector2D_add(&v2, &sphinx.body->transform->position);
-		Vector2D_add(&v2, &sphinx.head->transform->position);
-		v2.y -= 70;
-		Vector2D_normalize(&v);
-		shotEnemyBullet0(&v2, &v);
+		double cnt;
+		double len;
+		Timer_get_count(sphinx.timer, &cnt);
+		Animation2D_get_length(bossStandUpAnim, &len);
+		if(cnt <= len)
+		{
+			Animation2D_play(bossStandUpAnim);
+		}
+		else
+		{
+			hp10 = false;
+		}
+	}
+
+	if(punch == true)
+	{
+		double cnt;
+		double len;
+		Timer_get_count(sphinx.timer, &cnt);
+		Animation2D_get_length(bossPunch, &len);
+		if(cnt <= len)
+		{
+			Animation2D_play(bossPunch);
+		}
+		else
+		{
+			punch = false;
+		}
+	}
+	
+	if(sphinx.hp1 > 0)
+	{
+		Vector2D_set(&v, &playerCharacter.object->transform->position);
+		Vector2D_sub(&v, &sphinx.childObject->transform->position);
+		Vector2D_sub(&v, &sphinx.lleg->transform->position);
+		Vector2D_sub(&v, &sphinx.uleg->transform->position);
+		Vector2D_sub(&v, &sphinx.body->transform->position);
+		Vector2D_sub(&v, &sphinx.headp->transform->position);
+		Vector2D_sub(&v, &sphinx.head->transform->position);
+		Vector2D_sub(&v, &sphinx.eye->transform->position);
+		sphinx.headp->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
+
+		if(rand()%60 == 0)
+		{
+			Vector2D v2;
+			Vector2D_set(&v2, &sphinx.childObject->transform->position);
+			Vector2D_add(&v2, &sphinx.lleg->transform->position);
+			Vector2D_add(&v2, &sphinx.uleg->transform->position);
+			Vector2D_add(&v2, &sphinx.body->transform->position);
+			Vector2D_add(&v2, &sphinx.headp->transform->position);
+			Vector2D_add(&v2, &sphinx.head->transform->position);
+			Vector2D_add(&v2, &sphinx.eye->transform->position);
+			//v2.y -= 20;
+			Vector2D_normalize(&v);
+			shotEnemyBullet0(&v2, &v);
+		}
+
+		bool flag = false;
+		bool flag2 = false;
+
+		if(sphinx.bdcol->hits[0] != NULL) flag = true;
+		if(sphinx.ulcol->hits[0] != NULL) flag = true;
+		if(sphinx.llcol->hits[0] != NULL) flag = true;
+		if(sphinx.uacol->hits[0] != NULL) flag = true;
+		if(sphinx.lacol->hits[0] != NULL) flag = true;
+		if(sphinx.hdcol->hits[0] != NULL) flag = true;
+		if(sphinx.jwcol->hits[0] != NULL) flag = true;
+
+		if(sphinx.eycol->hits[0] != NULL) flag2 = true;
+		if(sphinx.blcol->hits[0] != NULL) flag2 = true;
+
+		if(flag2 == true)
+		{
+			sphinx.hp1 -= 10;
+			DP("sphinx.hp1 : %f!!!!!!\n", sphinx.hp1);
+			if(sphinx.hp1 <= 0)
+			{
+			Timer_reset_count(sphinx.timer);
+			hp10 = true;
+			}
+		}
+		else if(flag == true)
+		{
+			sphinx.hp1 -= 1;
+			DP("sphinx.hp1 : %f\n", sphinx.hp1);
+			if(sphinx.hp1 <= 0)
+			{
+			Timer_reset_count(sphinx.timer);
+			hp10 = true;
+			}
+		}
+	}
+	else if(hp10 == false)// 2nd 
+	{
+		if(punch == false)
+		{
+			if(rand()%60 == 0)
+			{
+				Animation2D_reset(bossPunch);
+				Timer_reset_count(sphinx.timer);
+				punch = true;
+			}
+		}
 	}
 
 }

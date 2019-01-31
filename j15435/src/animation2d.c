@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stddef.h>
+#include <math.h>
 
 #include "debug.h"
 #include "timer.h"
@@ -246,6 +247,85 @@ void Animation2D_play(Animation2D* const p_this)
 					p_this->pv->sizes[i]);
 				break;
 
+			case ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE:
+				DPIF(false,"dummy");
+
+				/*
+				 * var += val * timespent/frmlength
+				 */
+
+				if(p_this->pv->current_frame - 1 < 0)
+				{
+					previousfrmindex = p_this->pv->anim_length - 1;
+				}
+				else
+				{	
+					previousfrmindex = p_this->pv->current_frame - 1;
+				}
+				
+				// (void**)   p_this->pv->variables
+				// (void*)    p_this->pv->variables[i]
+				
+				memcpy(&vard,
+					p_this->pv->variables[i],
+					p_this->pv->sizes[i]);
+
+				memcpy(&vald,
+					p_this->pv->frm[p_this->pv->current_frame].values[i],
+					p_this->pv->sizes[i]);
+
+				memcpy(&valpd,
+					p_this->pv->frm[previousfrmindex].values[i],
+					p_this->pv->sizes[i]);
+
+				//vard += (vald-valpd) * p_this->pv->last_frame_time / p_this->pv->frm[p_this->pv->current_frame].length;
+				vard = valpd + (vald-valpd) * (-pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,3)*2 + pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,2)*3 );
+
+				memcpy(p_this->pv->variables[i],
+					&vard,
+					p_this->pv->sizes[i]);
+				break;
+
+			case ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D:
+				DPIF(false,"dummy");
+
+				/*
+				 * var += val * timespent/frmlength
+				 */
+
+				if(p_this->pv->current_frame - 1 < 0)
+				{
+					previousfrmindex = p_this->pv->anim_length - 1;
+				}
+				else
+				{	
+					previousfrmindex = p_this->pv->current_frame - 1;
+				}
+				
+				// (void**)   p_this->pv->variables
+				// (void*)    p_this->pv->variables[i]
+				
+				memcpy(&varv2,
+					p_this->pv->variables[i],
+					p_this->pv->sizes[i]);
+
+				memcpy(&valv2,
+					p_this->pv->frm[p_this->pv->current_frame].values[i],
+					p_this->pv->sizes[i]);
+
+				memcpy(&valpv2,
+					p_this->pv->frm[previousfrmindex].values[i],
+					p_this->pv->sizes[i]);
+
+				//vard += (vald-valpd) * p_this->pv->last_frame_time / p_this->pv->frm[p_this->pv->current_frame].length;
+				varv2.x = valpv2.x + (valv2.x-valpv2.x) * (-pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,3)*2.0 + pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,2)*3.0 );
+				varv2.y = valpv2.y + (valv2.y-valpv2.y) * (-pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,3)*2.0 + pow(p_this->pv->frame_time_current / p_this->pv->frm[p_this->pv->current_frame].length,2)*3.0 );
+
+				memcpy(p_this->pv->variables[i],
+					&varv2,
+					p_this->pv->sizes[i]);
+				break;
+
 			default:
 				break;
 		}
@@ -255,9 +335,26 @@ void Animation2D_play(Animation2D* const p_this)
 	{
 		for(int i = 0; i < p_this->pv->numVars; i++)
 		{
-			memcpy(p_this->pv->variables[i],
-				p_this->pv->frm[p_this->pv->current_frame].values[i],
-				p_this->pv->sizes[i]);
+			// 
+			if(p_this->pv->smoothingTypes[i] == ANIMATION_USE_FUNCCTION)
+			{
+				void func(void*);
+				void* funcp;
+				funcp = &func;
+				//func = (void(void*))(p_this->pv->variables[i]);
+				//((void*(void*))p_this->pv->variables[i])(*((void**)p_this->pv->frm[p_this->pv->current_frame].values[i]));
+				memcpy(funcp,
+					p_this->pv->variables[i],
+					p_this->pv->sizes[i]);
+
+				func(p_this->pv->frm[p_this->pv->current_frame].values[i]);
+			}
+			else
+			{
+				memcpy(p_this->pv->variables[i],
+					p_this->pv->frm[p_this->pv->current_frame].values[i],
+					p_this->pv->sizes[i]);
+			}
 		}
 		
 		p_this->pv->frame_time_current = 0.0;
@@ -266,6 +363,17 @@ void Animation2D_play(Animation2D* const p_this)
 		else
 			p_this->pv->current_frame++;
 	}
+}
+
+void Animation2D_get_length(Animation2D* const this, double* const ret)
+{
+	double length = 0;
+	for(int i = 0; i < this->pv->anim_length; i++)
+	{
+		length += this->pv->frm[i].length;
+	}
+
+	*ret = length;
 }
 
 void Animation2D_reset(Animation2D* const this)
