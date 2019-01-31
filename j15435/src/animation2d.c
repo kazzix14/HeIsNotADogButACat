@@ -326,6 +326,7 @@ void Animation2D_play(Animation2D* const p_this)
 					p_this->pv->sizes[i]);
 				break;
 
+
 			default:
 				break;
 		}
@@ -335,26 +336,9 @@ void Animation2D_play(Animation2D* const p_this)
 	{
 		for(int i = 0; i < p_this->pv->numVars; i++)
 		{
-			// 
-			if(p_this->pv->smoothingTypes[i] == ANIMATION_USE_FUNCCTION)
-			{
-				void func(void*);
-				void* funcp;
-				funcp = &func;
-				//func = (void(void*))(p_this->pv->variables[i]);
-				//((void*(void*))p_this->pv->variables[i])(*((void**)p_this->pv->frm[p_this->pv->current_frame].values[i]));
-				memcpy(funcp,
-					p_this->pv->variables[i],
-					p_this->pv->sizes[i]);
-
-				func(p_this->pv->frm[p_this->pv->current_frame].values[i]);
-			}
-			else
-			{
-				memcpy(p_this->pv->variables[i],
-					p_this->pv->frm[p_this->pv->current_frame].values[i],
-					p_this->pv->sizes[i]);
-			}
+			memcpy(p_this->pv->variables[i],
+				p_this->pv->frm[p_this->pv->current_frame].values[i],
+				p_this->pv->sizes[i]);
 		}
 		
 		p_this->pv->frame_time_current = 0.0;

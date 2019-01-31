@@ -169,6 +169,7 @@ typedef struct boss0
 	Collider2D* lzcol;
 
 	Timer* timer;
+	Timer* lazerTimer;
 
 	Audio* aPunch;
 	Audio* aMao;
@@ -849,7 +850,7 @@ void movePlayerBullet0()
 Animation2D* bossStandUpAnim;
 Animation2D* bossPunch;
 Animation2D* bossHead;
-Animation2D* bossLazer;
+Animation2D* bossJaw;
 
 void initSphinx()
 {
@@ -897,6 +898,7 @@ void initSphinx()
 
 
 	sphinx.timer = Timer_new();
+	sphinx.lazerTimer = Timer_new();
 
 	sphinx.aPunch = Audio_new(2);
 	sphinx.aMao = Audio_new(2);
@@ -1180,30 +1182,56 @@ void initSphinx()
 	bossStandUpAnim = Animation2D_new();
 	bossPunch = Animation2D_new();
 	bossHead = Animation2D_new();
-	bossLazer = Animation2D_new();
+	bossJaw = Animation2D_new();
 
-	/////////////////////////////////// lazer
+	/////////////////////////////////// jaw
 	// frame 0 init
-	Animation2D_add_frame(bossLazer);
-	Animation2D_set_frame_length(bossLazer, 0, 0);
-	Animation2D_add_animated_variable(bossLazer, 0, &Object_set_invalid, &sphinx.lazer, sizeof(void *), ANIMATION_USE_FUNCCTION);
+	Animation2D_add_frame(bossJaw);
+	Animation2D_set_frame_length(bossJaw, 0, 2);
+	neww = 0;
+	Animation2D_add_animated_variable(bossJaw, 0, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	Animation2D_add_frame(bossJaw);
+	Animation2D_set_frame_length(bossJaw, 1, 2);
+	neww = -40;
+	Animation2D_add_animated_variable(bossJaw, 1, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	Animation2D_add_frame(bossJaw);
+	Animation2D_set_frame_length(bossJaw, 2, 2);
+	neww = -40;
+	Animation2D_add_animated_variable(bossJaw, 2, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	Animation2D_add_frame(bossJaw);
+	Animation2D_set_frame_length(bossJaw, 3, 2);
+	neww = 0;
+	Animation2D_add_animated_variable(bossJaw, 3, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
 	//////////////////////////////////// head rot
 	// frame 0
 	Animation2D_add_frame(bossHead);
-	Animation2D_set_frame_length(bossHead, 0, 1);
+	Animation2D_set_frame_length(bossHead, 0, 2);
 	neww = 0;
 	Animation2D_add_animated_variable(bossHead, 0, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	// frame 1
 	Animation2D_add_frame(bossHead);
-	Animation2D_set_frame_length(bossHead, 1, 1);
-	neww = 8;
+	Animation2D_set_frame_length(bossHead, 1, 2);
+	neww = -40;
 	Animation2D_add_animated_variable(bossHead, 1, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	// frame 2
 	Animation2D_add_frame(bossHead);
-	Animation2D_set_frame_length(bossHead, 2, 1);
-	neww = -5;
+	Animation2D_set_frame_length(bossHead, 2, 4);
+	neww = 0;
 	Animation2D_add_animated_variable(bossHead, 2, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	// frame 3
+	Animation2D_add_frame(bossHead);
+	Animation2D_set_frame_length(bossHead, 3, 2);
+	neww = 20;
+	Animation2D_add_animated_variable(bossHead, 3, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	// frame 4
+	Animation2D_add_frame(bossHead);
+	Animation2D_set_frame_length(bossHead, 4, 2);
+	neww = 0;
+	Animation2D_add_animated_variable(bossHead, 4, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	//////////////////////////////////// standup
 	// frame 0 init
 	Animation2D_add_frame(bossStandUpAnim);
@@ -1231,8 +1259,8 @@ void initSphinx()
 	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	neww = -80;
 	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.headp->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
-	v.x = sphinx.headp->transform->position.x - 20 ;
-	v.y = sphinx.headp->transform->position.y + 12;
+	v.x = sphinx.headp->transform->position.x - 29 ;
+	v.y = sphinx.headp->transform->position.y + 9;
 	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.headp->transform->position), &(v), sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
 	v.x = 1.9;
 	v.y = 1.9;
@@ -1356,6 +1384,9 @@ void moveSphinx()
 {
 	static bool hp10 = false;
 	static bool punch = false;
+	static bool lazer = false;
+	static bool child = false;
+
 	Vector2D v;
 
 	if(hp10 == true)
@@ -1387,6 +1418,63 @@ void moveSphinx()
 		else
 		{
 			punch = false;
+		}
+	}
+
+	if(lazer == true)
+	{
+		double cnt;
+		Timer_get_count(sphinx.timer, &cnt);
+		if(cnt < 4.0) // 5
+		{
+			Animation2D_play(bossHead);
+			double cnt2;
+			Timer_get_count(sphinx.lazerTimer, &cnt2);
+			if(cnt2 > 0.8) 
+			{
+				Timer_reset_count(sphinx.lazerTimer);
+				bool isValid;
+				Object_is_valid(sphinx.lazer, &isValid);
+				
+				if(isValid == true)
+				{	
+				Object_set_invalid(sphinx.lazer);
+				}
+				else
+				{
+				Object_set_valid(sphinx.lazer);
+				}
+			}
+		}
+		else
+		{
+			lazer = false;
+			Object_set_invalid(sphinx.lazer);
+		}
+	}
+
+	if(child == true)
+	{
+		double cnt;
+		double len;
+		bool go = true;
+		Timer_get_count(sphinx.timer, &cnt);
+		Animation2D_get_length(bossJaw, &len);
+		if(cnt <= len)
+		{
+			Animation2D_play(bossJaw);
+			if(cnt > len/2.0 && go == true)
+			{
+				Vector2D v2;
+				v2.x = 790;
+				v2.y = 200;
+				addEnemyCharacter1(&v2, 0, 8, 11);
+				go = false;
+			}
+		}
+		else
+		{
+			child = false;
 		}
 	}
 	
@@ -1454,13 +1542,24 @@ void moveSphinx()
 	}
 	else if(hp10 == false)// 2nd 
 	{
-		if(punch == false)
+		if(punch == false && lazer == false && child == false)
 		{
 			if(rand()%60 == 0)
 			{
 				Animation2D_reset(bossPunch);
 				Timer_reset_count(sphinx.timer);
 				punch = true;
+			}
+			else if(rand()%60 == 0)
+			{
+				Timer_reset_count(sphinx.timer);
+				lazer = true;
+			
+			}
+			else if(rand()%60 == 0)
+			{
+				Timer_reset_count(sphinx.timer);
+				child = true;
 			}
 		}
 	}
@@ -2015,6 +2114,7 @@ void updateTimer()
 	Timer_count(backTimer);
 	Timer_count(stage0Timer);
 	Timer_count(sphinx.timer);
+	Timer_count(sphinx.lazerTimer);
 }
 
 void initPowerupCore()
