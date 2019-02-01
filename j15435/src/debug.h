@@ -12,10 +12,10 @@
 #include <stdio.h>
 
 #ifdef DEBUG
-	#define DP(fmt, args...) fprintf(stdout, fmt, ##args)
-	#define DPIF(condition, fmt, args...) if(condition)fprintf(stdout, fmt, ##args)
-	#define DE(fmt, args...) fprintf(stderr, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args)
-	#define DEIF(condition, fmt, args...) if(condition)fprintf(stderr, "%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args)
+	#define DP(fmt, args...) fprintf(stdout, fmt, ##args);
+	#define DPIF(condition, fmt, args...) if(condition){fprintf(stdout, fmt, ##args);}
+	#define DE(fmt, args...) fprintf(stderr, "\x1b[41m%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args);fprintf(stderr, "\x1b[40m");
+	#define DEIF(condition, fmt, args...) if(condition){fprintf(stderr, "\x1b[41m%s:%d:%s():" fmt, __FILE__, __LINE__, __func__, ##args);fprintf(stderr, "\x1b[40m");}
 	#define DDO(code) code
 #else
 	#define DP(fmt, args...)

@@ -58,7 +58,7 @@ static void down(unsigned char key, int x, int y)
 		// 'a' - 'A' == 32
 		if(keydownflag[key] == 0)
 		{
-			DPIF(true, "Key %d is pressed\n", key);
+			DPIF(false, "Key %d is pressed\n", key);
 			keypressed[keypressedhead++] = key+32;
 			keydownflag[key+32] = 1;
 		}
@@ -67,7 +67,7 @@ static void down(unsigned char key, int x, int y)
 	{
 		if(keydownflag[key] == 0)
 		{
-			DPIF(true, "Key %d is pressed\n", key);
+			DPIF(false, "Key %d is pressed\n", key);
 			keypressed[keypressedhead++] = key;
 			keydownflag[key] = 1;
 		}
@@ -82,7 +82,7 @@ static void up(unsigned char key, int x, int y)
 		// 'a' - 'A' == 32
 		if(keydownflag[key] == 1)
 		{
-			DPIF(true, "Key %d is released\n", key);
+			DPIF(false, "Key %d is released\n", key);
 			keydownflag[key+32] = 0;
 		}
 	}
@@ -90,7 +90,7 @@ static void up(unsigned char key, int x, int y)
 	{
 		if(keydownflag[key] == 1)
 		{
-			DPIF(true, "Key %d is released\n", key);
+			DPIF(false, "Key %d is released\n", key);
 			keydownflag[key] = 0;
 		}
 	}

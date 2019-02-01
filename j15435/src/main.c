@@ -39,9 +39,11 @@
 #define WINDOW_HEIGHT 768
 
 #define PLAYER_CHARACTER_DEFAULT_SPEED 130
+#define PLAYER_CHARACTER_DEFAULT_HP 100
 #define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 1200
 #define PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL 0.01
-#define PLAYER_CHARACTER_BULLET_NUM 2
+#define PLAYER_CHARACTER_DEFAULT_BULLET_NUM 1
+#define PLAYER_CHARACTER_BULLET_NUM_LIMIT 8
 
 #define ENEMY_CHARACTER0_DEFAULT_NUM 32
 #define ENEMY_CHARACTER0_DEFAULT_SPEED 200
@@ -50,7 +52,7 @@
 #define ENEMY_BULLET0_DEFAULT_NUM 64
 #define ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED 350
 
-#define ENEMY_CHARACTER1_DEFAULT_NUM 16
+#define ENEMY_CHARACTER1_DEFAULT_NUM 24
 #define ENEMY_CHARACTER1_DEFAULT_SPEED 160
 #define ENEMY_CHARACTER1_DEFAULT_ACCELERATION 0
 #define ENEMY_CHARACTER1_DEFAULT_INTERVAL 3
@@ -62,8 +64,11 @@
 
 #define POWERUPCORE_DEFAULT_NUM 16
 #define POWERUPCORE_DEFAULT_SPEED 100
-#define POWERUPCORE_OBTAIN_SPEED 20
+#define POWERUPCORE_OBTAIN_SPEED 30
+#define POWERUPCORE_OBTAIN_BULLETSPEED 30
 #define POWERUPCORE_SPEEDUP_TAG "pusp"
+#define POWERUPCORE_BULLETSPEEDUP_TAG "pubs"
+#define POWERUPCORE_BULLETNUMINCREASE_TAG "pubn"
 
 #define BACKGROUND1_SPEED 30
 #define BACKGROUND2_SPEED 60
@@ -85,6 +90,7 @@ typedef struct playercharacter
 	Collider2D* collider;
 	Image2D* image0;
 	double speed;
+	double hp;
 
 	Timer* timer;
 } PlayerCharacter;
@@ -92,13 +98,14 @@ typedef struct playercharacter
 typedef struct playerbullet0
 {
 	Object* masterObject;
-	Object* object[PLAYER_CHARACTER_BULLET_NUM];
-	Collider2D* collider[PLAYER_CHARACTER_BULLET_NUM];
+	Object* object[PLAYER_CHARACTER_BULLET_NUM_LIMIT];
+	Collider2D* collider[PLAYER_CHARACTER_BULLET_NUM_LIMIT];
 	Image2D* image0;
 	Audio* audioShot;
 
 	double speed;
 	double interval;
+	int bulletNum;
 
 	Timer* timer;
 } PlayerBullet0;
@@ -111,7 +118,6 @@ typedef struct enemycharacter0
 	Object* imageObject[ENEMY_CHARACTER0_DEFAULT_NUM];
 	Collider2D* collider[ENEMY_CHARACTER0_DEFAULT_NUM];
 	Image2D* image0;
-	Audio* audioDestroy;
 	double speed;
 	double acceleration;
 	double interval;
@@ -129,7 +135,6 @@ typedef struct enemycharacter2 // vehicle
 	Collider2D* collider[ENEMY_CHARACTER2_DEFAULT_NUM];
 	Image2D* image0; // tire
 	Image2D* image1; // cannon
-	Audio* audioDestroy;
 	double speed[ENEMY_CHARACTER2_DEFAULT_SPEED];
 	double acceleration;
 	double interval;
@@ -218,6 +223,7 @@ typedef struct destroyeffect
 	Object* masterObject;
 	Object* object[DESTROY_EFFECT_NUM];
 	Image2D* image0;
+	Audio* audioDestroy;
 	double fadeTime;
 
 	Timer* masterTimer;
@@ -256,6 +262,8 @@ void movePlayerBullet0();
 
 void initSphinx();
 void moveSphinx();
+void setSphinxColInvalid();
+void setSphinxColValid();
 
 void initEnemyCharacter0();
 void initEnemyBullet0();
@@ -307,13 +315,21 @@ double totaltime = 0;
 
 PlayerCharacter playerCharacter;
 PlayerBullet0 playerBullet0;
+long long numDestroy = 0;
+
 EnemyCharacter0 enemyCharacter0;
 EnemyCharacter0 enemyCharacter1;
 EnemyCharacter2 enemyCharacter2;
+
 EnemyBullet0 enemyBullet0;
+
 PowerupCore powerupCore;
+
 DestroyEffect destroyEffect0;;
+
 Boss0 sphinx;
+bool sphinxNow;
+double timeSphinxApper = 80;
 
 
 Object* backbase;
@@ -327,7 +343,11 @@ Timer* backTimer;
 int backgroundWidth;
 
 Object* stage0;
+Object* groundObj0;
 double stage0_moving_speed = 120;
+double stage0ground0length;
+double stage0ground0time = 80;
+double stage0ground0Offset;
 Timer* stage0Timer;
 
 long long score;
@@ -461,7 +481,7 @@ void fps()
 	tc = (double)tv.tv_sec + (double)tv.tv_usec * 1.e-6;
 	if(tc - ts >= 1.0)
 	{
-		DP("fps:%2d\n", count);
+		DPIF(false, "fps:%2d\n", count);
 		ts = tc;
 		count = 0;
 	}
@@ -641,6 +661,7 @@ void initPlayerCharacter()
 	playerCharacter.image0 = Image2D_new();
 	playerCharacter.timer = Timer_new();
 	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
+	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 
 	playerCharacter.imageObject->transform->position.x = -4;
 	playerCharacter.imageObject->transform->position.y = -7;
@@ -669,7 +690,8 @@ void initPlayerBullet0()
 	playerBullet0.timer = Timer_new();
 	playerBullet0.masterObject = Object_new();
 	playerBullet0.image0 = Image2D_new();
-	playerBullet0.audioShot = Audio_new(PLAYER_CHARACTER_BULLET_NUM*2);
+	playerBullet0.audioShot = Audio_new(PLAYER_CHARACTER_BULLET_NUM_LIMIT+16);
+	playerBullet0.bulletNum = PLAYER_CHARACTER_DEFAULT_BULLET_NUM;
 	
 	Image2D_load(playerBullet0.image0, "resource/image/player/bullet/0.png");
 	Audio_load(playerBullet0.audioShot, "resource/audio/player/bullet/shot0.wav");
@@ -678,7 +700,7 @@ void initPlayerBullet0()
 	playerBullet0.speed = PLAYER_CHARACTER_BULLET_DEFAULT_SPEED;
 	playerBullet0.interval = PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL;
 
-	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM; i++)
+	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM_LIMIT; i++)
 	{
 		Object* pbo;
 		Collider2D* pbc;
@@ -741,7 +763,7 @@ void movePlayerCharacter()
 		{
 			DPIF(false, "count:%f\n", count);
 			Timer_reset_count(playerBullet0.timer);
-			for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM; i++)
+			for(int i = 0; i < playerBullet0.bulletNum; i++)
 			{
 				bool isValid;
 				Object_is_valid(playerBullet0.object[i], &isValid);
@@ -766,29 +788,63 @@ void movePlayerCharacter()
 	if(playerCharacter.collider->hits[0] != NULL)
 	{
 		bool pucore = false;
+		bool enemy = false;
+		char tag[COLLIDER2D_HITS_NUM][4];
+		int tagnum = 0;
 		for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
 		{
 			if(playerCharacter.collider->hits[i] != NULL)
 			{
-				if(strncmp(playerCharacter.collider->hits[i]->tag, POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
+				if(strncmp(playerCharacter.collider->hits[i]->tag, "pu", 2) == 0)
 				{
 					pucore = true;
-					break;
+					strncpy(playerCharacter.collider->hits[i]->tag, tag[tagnum], COLLIDER2D_TAG_LENGTH);
+					tagnum++;
+				}
+				if(strncmp(playerCharacter.collider->hits[i]->tag, "en", 2) == 0)
+				{
+					enemy = true;
 				}
 			}
 		}
 
 		if(pucore == true)
 		{
-			playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
+			for(int i = 0; i < tagnum; i++)
+			{
+				if(strncmp(tag[i], POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH))
+				{
+					playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
+					DPIF(true, "pc speed up");
+				}
+				else if(strncmp(tag[i], POWERUPCORE_BULLETSPEEDUP_TAG, COLLIDER2D_TAG_LENGTH))
+				{
+					playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
+					DPIF(true, "pb speed up");
+				}
+				else if(strncmp(tag[i], POWERUPCORE_BULLETNUMINCREASE_TAG, COLLIDER2D_TAG_LENGTH))
+				{
+					if(playerBullet0.bulletNum < PLAYER_CHARACTER_BULLET_NUM_LIMIT-1)
+					{
+						playerBullet0.bulletNum += 1;
+						DPIF(true, "pb num inc");
+					}
+				}
+			}
 		}
-		else
+		if(enemy == true)
 		{
-			DP(
-			   "---------------------------------------------------------\n"
-			   "You Died!!\n"
-			   "---------------------------------------------------------\n"
-			);
+			playerCharacter.hp -= 33;
+			addDestroyEffect(&playerCharacter.object->transform->position);
+			if(playerCharacter.hp < 0)
+			{
+				DPIF(true,
+				   "\x1b[41m---------------------------------------------------------\n"
+				   "You Died!!\n"
+				   "---------------------------------------------------------\n\x1b[40m"
+				);
+				playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+			}
 		}
 		//exit(0);
 	}
@@ -801,7 +857,7 @@ void movePlayerBullet0()
 {
 	double spf;
 	Timer_get_spf(playerBullet0.timer, &spf);
-	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM; i++)
+	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM_LIMIT; i++)
 	{
 		Object* pbo = playerBullet0.object[i];
 		bool isValid;
@@ -819,11 +875,27 @@ void movePlayerBullet0()
 					{
 						score += 100;
 						DP("score : %lld\n", score);
+						numDestroy++;
+						if(numDestroy %8 == 0)
+						{
+							if(rand() % 2 == 0)
+							{
+								addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_BULLETSPEEDUP_TAG);
+							}
+							else
+							{
+								addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_BULLETNUMINCREASE_TAG);
+							}
+						}
 					}else if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc1", COLLIDER2D_TAG_LENGTH) == 0)
 					{
 						score += 200;
 						DP("score : %lld\n", score);
-
+						numDestroy++;
+						if(numDestroy %8 == 0)
+						{
+							addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_SPEEDUP_TAG);
+						}
 					}
 				}
 			}
@@ -849,8 +921,10 @@ void movePlayerBullet0()
 
 Animation2D* bossStandUpAnim;
 Animation2D* bossPunch;
+Animation2D* bossSweep;
 Animation2D* bossHead;
 Animation2D* bossJaw;
+Animation2D* bossReset;
 
 void initSphinx()
 {
@@ -1171,28 +1245,31 @@ void initSphinx()
 
 
 
+	sphinxNow = false;
 	double neww;
 	Vector2D v;
 
 	Object_set_invalid(sphinx.lazer);
 
-	sphinx.childObject->transform->position.x = 850;
+	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
 	sphinx.childObject->transform->position.y = WINDOW_HEIGHT - 50;
 
 	bossStandUpAnim = Animation2D_new();
 	bossPunch = Animation2D_new();
+	bossSweep = Animation2D_new();
 	bossHead = Animation2D_new();
 	bossJaw = Animation2D_new();
+	bossReset = Animation2D_new();
 
 	/////////////////////////////////// jaw
 	// frame 0 init
 	Animation2D_add_frame(bossJaw);
-	Animation2D_set_frame_length(bossJaw, 0, 2);
+	Animation2D_set_frame_length(bossJaw, 0, 0.5);
 	neww = 0;
 	Animation2D_add_animated_variable(bossJaw, 0, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
 	Animation2D_add_frame(bossJaw);
-	Animation2D_set_frame_length(bossJaw, 1, 2);
+	Animation2D_set_frame_length(bossJaw, 1, 0.5);
 	neww = -40;
 	Animation2D_add_animated_variable(bossJaw, 1, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
@@ -1211,27 +1288,27 @@ void initSphinx()
 	Animation2D_add_frame(bossHead);
 	Animation2D_set_frame_length(bossHead, 0, 2);
 	neww = 0;
-	Animation2D_add_animated_variable(bossHead, 0, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossHead, 0, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	// frame 1
 	Animation2D_add_frame(bossHead);
 	Animation2D_set_frame_length(bossHead, 1, 2);
 	neww = -40;
-	Animation2D_add_animated_variable(bossHead, 1, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossHead, 1, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	// frame 2
 	Animation2D_add_frame(bossHead);
 	Animation2D_set_frame_length(bossHead, 2, 4);
 	neww = 0;
-	Animation2D_add_animated_variable(bossHead, 2, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossHead, 2, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	// frame 3
 	Animation2D_add_frame(bossHead);
 	Animation2D_set_frame_length(bossHead, 3, 2);
 	neww = 20;
-	Animation2D_add_animated_variable(bossHead, 3, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossHead, 3, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	// frame 4
 	Animation2D_add_frame(bossHead);
 	Animation2D_set_frame_length(bossHead, 4, 2);
 	neww = 0;
-	Animation2D_add_animated_variable(bossHead, 4, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossHead, 4, &(sphinx.head->transform->rotation.w), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	//////////////////////////////////// standup
 	// frame 0 init
 	Animation2D_add_frame(bossStandUpAnim);
@@ -1247,7 +1324,6 @@ void initSphinx()
 	// frame 1
 	Animation2D_add_frame(bossStandUpAnim);
 	Animation2D_set_frame_length(bossStandUpAnim, 1, 3);
-
 
        	neww = 60;
 	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.uleg->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
@@ -1266,6 +1342,65 @@ void initSphinx()
 	v.y = 1.9;
 	Animation2D_add_animated_variable(bossStandUpAnim, 1, &(sphinx.childObject->transform->scale), &(v), sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
 
+	////////////////////////////////////// sweep
+	// frame 0 init
+	Animation2D_add_frame(bossSweep);
+	Animation2D_set_frame_length(bossSweep, 0, 0.3);
+	neww = 50;
+	Animation2D_add_animated_variable(bossSweep, 0, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossSweep, 0, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossSweep, 0, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossSweep, 0, &(sphinx.uarm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1/neww;
+	Animation2D_add_animated_variable(bossSweep, 0, &(sphinx.larm->transform->scale.y), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 1 ready
+	Animation2D_add_frame(bossSweep);
+	Animation2D_set_frame_length(bossSweep, 1, 0.9);
+	neww = 10;
+	Animation2D_add_animated_variable(bossSweep, 1, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 140;
+	Animation2D_add_animated_variable(bossSweep, 1, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.4;
+	Animation2D_add_animated_variable(bossSweep, 1, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.6;
+	Animation2D_add_animated_variable(bossSweep, 1, &(sphinx.uarm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1/neww;
+	Animation2D_add_animated_variable(bossSweep, 1, &(sphinx.larm->transform->scale.y), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 2 sweep
+	Animation2D_add_frame(bossSweep);
+	Animation2D_set_frame_length(bossSweep, 2, 0.7);
+	neww = -245;
+	Animation2D_add_animated_variable(bossSweep, 2, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 271;
+	Animation2D_add_animated_variable(bossSweep, 2, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.7;
+	Animation2D_add_animated_variable(bossSweep, 2, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 8.0;
+	Animation2D_add_animated_variable(bossSweep, 2, &(sphinx.uarm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1/neww;
+	Animation2D_add_animated_variable(bossSweep, 2, &(sphinx.larm->transform->scale.y), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	// frame 3 end
+	Animation2D_add_frame(bossSweep);
+	Animation2D_set_frame_length(bossSweep, 3, 0.6);
+	neww = 50;
+	Animation2D_add_animated_variable(bossSweep, 3, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossSweep, 3, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossSweep, 3, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossSweep, 3, &(sphinx.uarm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1/neww;
+	Animation2D_add_animated_variable(bossSweep, 3, &(sphinx.larm->transform->scale.y), &(neww), sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 1 ready
+
 	////////////////////////////////////// punch
 	// frame 0 init
 	Animation2D_add_frame(bossPunch);
@@ -1279,7 +1414,7 @@ void initSphinx()
 
 	// frame 1 ready
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 1, 0.8);
+	Animation2D_set_frame_length(bossPunch, 1, 1.2);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 1, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1299,7 +1434,7 @@ void initSphinx()
 
 	// frame 3 punch 1 end
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 3, 0.1);
+	Animation2D_set_frame_length(bossPunch, 3, 0.04);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 3, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1309,7 +1444,7 @@ void initSphinx()
 
 	// frame 4 ready
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 4, 0.1);
+	Animation2D_set_frame_length(bossPunch, 4, 0.04);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 4, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1320,7 +1455,7 @@ void initSphinx()
 	// frame 5 punch 2
 	Animation2D_add_frame(bossPunch);
 	Animation2D_set_frame_length(bossPunch, 5, 0.1);
-	neww = 00;
+	neww = 0;
 	Animation2D_add_animated_variable(bossPunch, 5, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	neww = 90;
 	Animation2D_add_animated_variable(bossPunch, 5, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
@@ -1329,7 +1464,7 @@ void initSphinx()
 
 	// frame 6 punch 2 end
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 6, 0.1);
+	Animation2D_set_frame_length(bossPunch, 6, 0.01);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 6, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1339,7 +1474,7 @@ void initSphinx()
 
 	// frame 7 ready
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 7, 0.1);
+	Animation2D_set_frame_length(bossPunch, 7, 0.01);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 7, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1349,17 +1484,17 @@ void initSphinx()
 
 	// frame 8 punch 3
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 8, 0.1);
-	neww = 40;
+	Animation2D_set_frame_length(bossPunch, 8, 0.06);
+	neww = 32;
 	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	neww = 90;
 	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
-	neww = 3.2;
+	neww = 3.3;
 	Animation2D_add_animated_variable(bossPunch, 8, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 
 	// frame 9 punch 3 end
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 9, 0.1);
+	Animation2D_set_frame_length(bossPunch, 9, 0.01);
 	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 9, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 	neww = 20;
@@ -1367,15 +1502,60 @@ void initSphinx()
 	neww = 1.0;
 	Animation2D_add_animated_variable(bossPunch, 9, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
 
-	// end
+	// frame 10 ready
 	Animation2D_add_frame(bossPunch);
-	Animation2D_set_frame_length(bossPunch, 10, 0.3);
-	neww = 50;
+	Animation2D_set_frame_length(bossPunch, 10, 0.01);
+	neww = -40;
 	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
-	neww = 70;
+	neww = 20;
 	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 	neww = 1.0;
 	Animation2D_add_animated_variable(bossPunch, 10, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+	// frame 11 punch 4
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 11, 0.07);
+	neww = 38;
+	Animation2D_add_animated_variable(bossPunch, 11, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 90;
+	Animation2D_add_animated_variable(bossPunch, 11, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 3.3;
+	Animation2D_add_animated_variable(bossPunch, 11, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// frame 12 punch 4 end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 12, 0.1);
+	neww = -38;
+	Animation2D_add_animated_variable(bossPunch, 12, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 20;
+	Animation2D_add_animated_variable(bossPunch, 12, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 12, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// end
+	Animation2D_add_frame(bossPunch);
+	Animation2D_set_frame_length(bossPunch, 13, 0.3);
+	neww = 50;
+	Animation2D_add_animated_variable(bossPunch, 13, &(sphinx.uarm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 70;
+	Animation2D_add_animated_variable(bossPunch, 13, &(sphinx.larm->transform->rotation.w), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+	neww = 1.0;
+	Animation2D_add_animated_variable(bossPunch, 13, &(sphinx.larm->transform->scale.x), &neww, sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
+
+
+	////////////////////////////////////////////// reset
+	Animation2D_add_frame(bossReset);
+	Animation2D_set_frame_length(bossReset, 0, 0);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.uarm->transform->rotation), &(sphinx.uarm->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.larm->transform->rotation), &(sphinx.larm->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.uleg->transform->rotation), &(sphinx.uleg->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.lleg->transform->rotation), &(sphinx.lleg->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.body->transform->rotation), &(sphinx.body->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.headp->transform->rotation), &(sphinx.headp->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.head->transform->rotation), &(sphinx.head->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.jaw->transform->rotation), &(sphinx.jaw->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.childObject->transform->scale), &(sphinx.childObject->transform->scale), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.headp->transform->position), &(sphinx.headp->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 
 }
 
@@ -1383,187 +1563,298 @@ void initSphinx()
 void moveSphinx()
 {
 	static bool hp10 = false;
+	static bool hp20 = false;
 	static bool punch = false;
+	static bool sweep = false;
 	static bool lazer = false;
 	static bool child = false;
+	static bool go = false;
 
 	Vector2D v;
-
-	if(hp10 == true)
+	
+	if(sphinx.childObject->transform->position.x < 850)
 	{
-		double cnt;
-		double len;
-		Timer_get_count(sphinx.timer, &cnt);
-		Animation2D_get_length(bossStandUpAnim, &len);
-		if(cnt <= len)
+		if(sphinxNow == false)
 		{
-			Animation2D_play(bossStandUpAnim);
+			sphinxNow = true;	
 		}
-		else
-		{
-			hp10 = false;
-		}
-	}
 
-	if(punch == true)
-	{
-		double cnt;
-		double len;
-		Timer_get_count(sphinx.timer, &cnt);
-		Animation2D_get_length(bossPunch, &len);
-		if(cnt <= len)
-		{
-			Animation2D_play(bossPunch);
-		}
-		else
-		{
-			punch = false;
-		}
-	}
-
-	if(lazer == true)
-	{
-		double cnt;
-		Timer_get_count(sphinx.timer, &cnt);
-		if(cnt < 4.0) // 5
-		{
-			Animation2D_play(bossHead);
-			double cnt2;
-			Timer_get_count(sphinx.lazerTimer, &cnt2);
-			if(cnt2 > 0.8) 
-			{
-				Timer_reset_count(sphinx.lazerTimer);
-				bool isValid;
-				Object_is_valid(sphinx.lazer, &isValid);
-				
-				if(isValid == true)
-				{	
-				Object_set_invalid(sphinx.lazer);
-				}
-				else
-				{
-				Object_set_valid(sphinx.lazer);
-				}
-			}
-		}
-		else
-		{
-			lazer = false;
-			Object_set_invalid(sphinx.lazer);
-		}
-	}
-
-	if(child == true)
-	{
-		double cnt;
-		double len;
-		bool go = true;
-		Timer_get_count(sphinx.timer, &cnt);
-		Animation2D_get_length(bossJaw, &len);
-		if(cnt <= len)
-		{
-			Animation2D_play(bossJaw);
-			if(cnt > len/2.0 && go == true)
-			{
-				Vector2D v2;
-				v2.x = 790;
-				v2.y = 200;
-				addEnemyCharacter1(&v2, 0, 8, 11);
-				go = false;
-			}
-		}
-		else
+		if(hp20 == true)
 		{
 			child = false;
-		}
-	}
-	
-	if(sphinx.hp1 > 0)
-	{
-		Vector2D_set(&v, &playerCharacter.object->transform->position);
-		Vector2D_sub(&v, &sphinx.childObject->transform->position);
-		Vector2D_sub(&v, &sphinx.lleg->transform->position);
-		Vector2D_sub(&v, &sphinx.uleg->transform->position);
-		Vector2D_sub(&v, &sphinx.body->transform->position);
-		Vector2D_sub(&v, &sphinx.headp->transform->position);
-		Vector2D_sub(&v, &sphinx.head->transform->position);
-		Vector2D_sub(&v, &sphinx.eye->transform->position);
-		sphinx.headp->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
-
-		if(rand()%60 == 0)
+			sweep = false;
+			punch = false;
+			lazer = false;
+			Object_set_invalid(sphinx.lazer);
+			Object_set_invalid(sphinx.masterObject);
+			sphinxNow = false;
+			setSphinxColInvalid();
+			hp20 = false;
+			//sphinx.hp2 = SPHINX_DEFAULT_HP2;
+		}	
+		if(hp10 == true)
 		{
-			Vector2D v2;
-			Vector2D_set(&v2, &sphinx.childObject->transform->position);
-			Vector2D_add(&v2, &sphinx.lleg->transform->position);
-			Vector2D_add(&v2, &sphinx.uleg->transform->position);
-			Vector2D_add(&v2, &sphinx.body->transform->position);
-			Vector2D_add(&v2, &sphinx.headp->transform->position);
-			Vector2D_add(&v2, &sphinx.head->transform->position);
-			Vector2D_add(&v2, &sphinx.eye->transform->position);
-			//v2.y -= 20;
-			Vector2D_normalize(&v);
-			shotEnemyBullet0(&v2, &v);
-		}
-
-		bool flag = false;
-		bool flag2 = false;
-
-		if(sphinx.bdcol->hits[0] != NULL) flag = true;
-		if(sphinx.ulcol->hits[0] != NULL) flag = true;
-		if(sphinx.llcol->hits[0] != NULL) flag = true;
-		if(sphinx.uacol->hits[0] != NULL) flag = true;
-		if(sphinx.lacol->hits[0] != NULL) flag = true;
-		if(sphinx.hdcol->hits[0] != NULL) flag = true;
-		if(sphinx.jwcol->hits[0] != NULL) flag = true;
-
-		if(sphinx.eycol->hits[0] != NULL) flag2 = true;
-		if(sphinx.blcol->hits[0] != NULL) flag2 = true;
-
-		if(flag2 == true)
-		{
-			sphinx.hp1 -= 10;
-			DP("sphinx.hp1 : %f!!!!!!\n", sphinx.hp1);
-			if(sphinx.hp1 <= 0)
+			double cnt;
+			double len;
+			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossStandUpAnim, &len);
+			if(cnt <= len)
 			{
-			Timer_reset_count(sphinx.timer);
-			hp10 = true;
+				Animation2D_play(bossStandUpAnim);
+			}
+			else
+			{
+				hp10 = false;
+				//sphinx.hp1 = SPHINX_DEFAULT_HP1;
 			}
 		}
-		else if(flag == true)
+		if(punch == true)
 		{
-			sphinx.hp1 -= 1;
-			DP("sphinx.hp1 : %f\n", sphinx.hp1);
-			if(sphinx.hp1 <= 0)
+			double cnt;
+			double len;
+			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossPunch, &len);
+			if(cnt <= len)
 			{
-			Timer_reset_count(sphinx.timer);
-			hp10 = true;
+				Animation2D_play(bossPunch);
+			}
+			else
+			{
+				punch = false;
 			}
 		}
-	}
-	else if(hp10 == false)// 2nd 
-	{
-		if(punch == false && lazer == false && child == false)
+		else if(lazer == true)
 		{
+			double cnt;
+			double len;
+			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossHead, &len);
+			if(cnt < len)
+			{
+				Animation2D_play(bossHead);
+				double cnt2;
+				Timer_get_count(sphinx.lazerTimer, &cnt2);
+				if(cnt2 > 0.6) 
+				{
+					Timer_reset_count(sphinx.lazerTimer);
+					bool isValid;
+					Object_is_valid(sphinx.lazer, &isValid);
+					
+					if(isValid == true)
+					{	
+						sphinx.lzcol->isValid = false;
+						Object_set_invalid(sphinx.lazer);
+					}
+					else
+					{
+						sphinx.lzcol->isValid = true;
+						Object_set_valid(sphinx.lazer);
+					}
+				}
+			}
+			else
+			{
+				lazer = false;
+				sphinx.lzcol->isValid = false;
+				Object_set_invalid(sphinx.lazer);
+			}
+		}
+		else if(child == true)
+		{
+			double cnt;
+			double len;
+			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossJaw, &len);
+			if(cnt <= len)
+			{
+				Animation2D_play(bossJaw);
+				if(cnt > 1.0 && go == true)
+				{
+					Vector2D v2;
+					v2.x = 784;
+					v2.y = 196;
+					addEnemyCharacter1(&v2, 10, 16, 19);
+					go = false;
+				}
+			}
+			else
+			{
+				child = false;
+			}
+		}
+		else if(sweep == true)
+		{
+			double cnt;
+			double len;
+			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossSweep, &len);
+			if(cnt <= len)
+			{
+				Animation2D_play(bossSweep);
+			}
+			else
+			{
+				sweep = false;
+			}
+		}
+		
+		if(sphinx.hp1 > 0)
+		{
+			Vector2D_set(&v, &playerCharacter.object->transform->position);
+			Vector2D_sub(&v, &sphinx.childObject->transform->position);
+			Vector2D_sub(&v, &sphinx.lleg->transform->position);
+			Vector2D_sub(&v, &sphinx.uleg->transform->position);
+			Vector2D_sub(&v, &sphinx.body->transform->position);
+			Vector2D_sub(&v, &sphinx.headp->transform->position);
+			Vector2D_sub(&v, &sphinx.head->transform->position);
+			Vector2D_sub(&v, &sphinx.eye->transform->position);
+			sphinx.headp->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
+
 			if(rand()%60 == 0)
 			{
-				Animation2D_reset(bossPunch);
-				Timer_reset_count(sphinx.timer);
-				punch = true;
+				Vector2D v2;
+				Vector2D_set(&v2, &sphinx.childObject->transform->position);
+				Vector2D_add(&v2, &sphinx.lleg->transform->position);
+				Vector2D_add(&v2, &sphinx.uleg->transform->position);
+				Vector2D_add(&v2, &sphinx.body->transform->position);
+				Vector2D_add(&v2, &sphinx.headp->transform->position);
+				Vector2D_add(&v2, &sphinx.head->transform->position);
+				Vector2D_add(&v2, &sphinx.eye->transform->position);
+				//v2.y -= 20;
+				Vector2D_normalize(&v);
+				shotEnemyBullet0(&v2, &v);
 			}
-			else if(rand()%60 == 0)
+
+			bool flag = false;
+			bool flag2 = false;
+
+			if(sphinx.bdcol->hits[0] != NULL) flag = true;
+			if(sphinx.ulcol->hits[0] != NULL) flag = true;
+			if(sphinx.llcol->hits[0] != NULL) flag = true;
+			if(sphinx.uacol->hits[0] != NULL) flag = true;
+			if(sphinx.lacol->hits[0] != NULL) flag = true;
+			if(sphinx.hdcol->hits[0] != NULL) flag = true;
+			if(sphinx.jwcol->hits[0] != NULL) flag = true;
+
+			if(sphinx.eycol->hits[0] != NULL) flag2 = true;
+			if(sphinx.blcol->hits[0] != NULL) flag2 = true;
+
+			if(flag2 == true)
 			{
-				Timer_reset_count(sphinx.timer);
-				lazer = true;
-			
+				sphinx.hp1 -= 10;
+				DP("sphinx.hp1 : %f!!!!!!\n", sphinx.hp1);
+				if(sphinx.hp1 <= 0)
+				{
+					Timer_reset_count(sphinx.timer);
+					hp10 = true;
+				}
 			}
-			else if(rand()%60 == 0)
+			else if(flag == true)
 			{
-				Timer_reset_count(sphinx.timer);
-				child = true;
+				sphinx.hp1 -= 1;
+				DP("sphinx.hp1 : %f\n", sphinx.hp1);
+				if(sphinx.hp1 <= 0)
+				{
+					Timer_reset_count(sphinx.timer);
+					hp10 = true;
+				}
+			}
+		}
+		else if(hp10 == false)// 2nd 
+		{
+			if(sweep == false && punch == false && lazer == false && child == false)
+			{
+				switch(rand() % 4)
+				{
+					case 0:
+						Animation2D_reset(bossPunch);
+						Timer_reset_count(sphinx.timer);
+						punch = true;
+						break;
+					case 1:
+						Animation2D_reset(bossHead);
+						Timer_reset_count(sphinx.timer);
+						lazer = true;
+						break;
+					
+					case 2:
+						Animation2D_reset(bossJaw);
+						Timer_reset_count(sphinx.timer);
+						child = true;
+						go = true;
+						break;
+					case 3:
+						Animation2D_reset(bossSweep);
+						Timer_reset_count(sphinx.timer);
+						sweep = true;
+						break;
+				}
+			}
+
+			bool flag = false;
+			bool flag2 = false;
+
+			if(sphinx.bdcol->hits[0] != NULL) flag = true;
+			if(sphinx.ulcol->hits[0] != NULL) flag = true;
+			if(sphinx.llcol->hits[0] != NULL) flag = true;
+			if(sphinx.uacol->hits[0] != NULL) flag = true;
+			if(sphinx.lacol->hits[0] != NULL) flag = true;
+			if(sphinx.hdcol->hits[0] != NULL) flag = true;
+			if(sphinx.jwcol->hits[0] != NULL) flag = true;
+
+			if(sphinx.eycol->hits[0] != NULL) flag2 = true;
+			if(sphinx.blcol->hits[0] != NULL) flag2 = true;
+
+			if(flag2 == true)
+			{
+				sphinx.hp2 -= 10;
+				DP("sphinx.hp2 : %f!!!!!!\n", sphinx.hp2);
+				if(sphinx.hp2 <= 0)
+				{
+					Timer_reset_count(sphinx.timer);
+					hp20 = true;
+				}
 			}
 		}
 	}
+	else
+	{
+		double spf;
+		Timer_get_spf(sphinx.timer, &spf);
+		sphinx.childObject->transform->position.x -= spf * stage0_moving_speed;
+		if(sphinxNow == true)
+		{
+			sphinxNow = false;	
+		}
+	}
 
+}
+
+void setSphinxColInvalid()
+{
+	sphinx.bdcol->isValid = false;
+	sphinx.ulcol->isValid = false;
+	sphinx.llcol->isValid = false;
+	sphinx.uacol->isValid = false;
+	sphinx.lacol->isValid = false;
+	sphinx.hdcol->isValid = false;
+	sphinx.jwcol->isValid = false;
+	sphinx.eycol->isValid = false;
+	sphinx.blcol->isValid = false;
+	sphinx.lzcol->isValid = false;
+}
+
+void setSphinxColValid()
+{
+	sphinx.bdcol->isValid = true;
+	sphinx.ulcol->isValid = true;
+	sphinx.llcol->isValid = true;
+	sphinx.uacol->isValid = true;
+	sphinx.lacol->isValid = true;
+	sphinx.hdcol->isValid = true;
+	sphinx.jwcol->isValid = true;
+	sphinx.eycol->isValid = true;
+	sphinx.blcol->isValid = true;
 }
 
 void initEnemyCharacter0()
@@ -1571,13 +1862,11 @@ void initEnemyCharacter0()
 	enemyCharacter0.masterObject = Object_new();
 	enemyCharacter0.image0 = Image2D_new();
 	enemyCharacter0.masterTimer = Timer_new();
-	enemyCharacter0.audioDestroy = Audio_new(ENEMY_CHARACTER0_DEFAULT_NUM);
 	enemyCharacter0.speed = ENEMY_CHARACTER0_DEFAULT_SPEED;
 	enemyCharacter0.acceleration = ENEMY_CHARACTER0_DEFAULT_ACCELERATION;
 	enemyCharacter0.interval = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
 
 	Image2D_load(enemyCharacter0.image0, "resource/image/enemy/plane/0.png");
-	Audio_load(enemyCharacter0.audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
 
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
 	{
@@ -1673,15 +1962,13 @@ void initEnemyCharacter1()
 	enemyCharacter1.masterObject = Object_new();
 	enemyCharacter1.image0 = Image2D_new();
 	enemyCharacter1.masterTimer = Timer_new();
-	enemyCharacter1.audioDestroy = Audio_new(ENEMY_CHARACTER1_DEFAULT_NUM);
 	enemyCharacter1.speed = ENEMY_CHARACTER1_DEFAULT_SPEED;
 	enemyCharacter1.acceleration = ENEMY_CHARACTER1_DEFAULT_ACCELERATION;
 	enemyCharacter1.interval = ENEMY_CHARACTER1_DEFAULT_INTERVAL;
 
 	Image2D_load(enemyCharacter1.image0, "resource/image/enemy/plane/1.png");
-	Audio_load(enemyCharacter1.audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
 
-	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
 	{
 		enemyCharacter1.object[i] = Object_new();
 		enemyCharacter1.childObject[i] = Object_new();
@@ -1725,13 +2012,11 @@ void initEnemyCharacter2()
 	enemyCharacter2.image0 = Image2D_new();
 	enemyCharacter2.image1 = Image2D_new();
 	enemyCharacter2.masterTimer = Timer_new();
-	enemyCharacter2.audioDestroy = Audio_new(ENEMY_CHARACTER2_DEFAULT_NUM);
 	enemyCharacter2.acceleration = ENEMY_CHARACTER2_DEFAULT_ACCELERATION;
 	enemyCharacter2.interval = ENEMY_CHARACTER2_DEFAULT_INTERVAL;
 
 	Image2D_load(enemyCharacter2.image0, "resource/image/enemy/vehicle/0t.png");
 	Image2D_load(enemyCharacter2.image1, "resource/image/enemy/vehicle/0c.png");
-	Audio_load(enemyCharacter2.audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
 
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
 	{
@@ -1777,7 +2062,6 @@ void moveEnemyCharacter0()
 				DPIF(false, "%p is destroyed by %p\n", enemyCharacter0.collider[i], enemyCharacter0.collider[i]->hits[0]);
 				Object_set_invalid(pbo);
 				enemyCharacter0.collider[i]->isValid = false;
-				Audio_play(enemyCharacter0.audioDestroy);
 
 				Vector2D v;
 				v.x = pbo->transform->position.x + 13;
@@ -1825,73 +2109,73 @@ void moveEnemyCharacter1()
 	int shotChance = 200;
 	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
 	{
-			double spf;
-			Timer_get_spf(enemyCharacter1.timer[i], &spf);
-			Object* pbo = enemyCharacter1.object[i];
-			// destroyed ?
-			if(enemyCharacter1.collider[i]->hits[0] != NULL)
+		double spf;
+		Timer_get_spf(enemyCharacter1.timer[i], &spf);
+		Object* pbo = enemyCharacter1.object[i];
+		// destroyed ?
+		if(enemyCharacter1.collider[i]->hits[0] != NULL)
+		{
+			DPIF(false, "%p is destroyed by %p\n", enemyCharacter1.collider[i], enemyCharacter1.collider[i]->hits[0]);
+			Object_set_invalid(pbo);
+			enemyCharacter1.collider[i]->isValid = false;
+
+			Vector2D v;
+			v.x = pbo->transform->position.x ;
+			v.y = pbo->transform->position.y;
+			addDestroyEffect(&v);
+		}
+		bool isValid;
+		Object_is_valid(pbo, &isValid);
+
+		if(isValid == true)
+		{
+			double t;
+			Timer_get_count(enemyCharacter1.timer[i], &t);
+
+			// just move forward
+			enemyCharacter1.object[i]->transform->position.x += cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
+			enemyCharacter1.object[i]->transform->position.y += sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
+
+			Vector2D v;
+			Vector2D_set(&v, &(playerCharacter.object->transform->position));
+			Vector2D_sub(&v, &(enemyCharacter1.object[i]->transform->position));
+			Vector2D_normalize(&v);
+			if(fabs(v.x - cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05 || fabs(v.y - sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05)
 			{
-				DPIF(false, "%p is destroyed by %p\n", enemyCharacter1.collider[i], enemyCharacter1.collider[i]->hits[0]);
-				Object_set_invalid(pbo);
-				enemyCharacter1.collider[i]->isValid = false;
-				Audio_play(enemyCharacter1.audioDestroy);
-
-				Vector2D v;
-				v.x = pbo->transform->position.x + 8;
-				v.y = pbo->transform->position.y + 8;
-				addDestroyEffect(&v);
-			}
-			bool isValid;
-			Object_is_valid(pbo, &isValid);
-
-			if(isValid == true)
-			{
-				double t;
-				Timer_get_count(enemyCharacter1.timer[i], &t);
-
-				// just move forward
-				enemyCharacter1.object[i]->transform->position.x += cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
-				enemyCharacter1.object[i]->transform->position.y += sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI) * spf * enemyCharacter1.speed;
-
-				Vector2D v;
-				Vector2D_set(&v, &(playerCharacter.object->transform->position));
-				Vector2D_sub(&v, &(enemyCharacter1.object[i]->transform->position));
-				Vector2D_normalize(&v);
-				if(fabs(v.x - cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05 || fabs(v.y - sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05)
+				// point to player
+				if(t > enemyCharacter1.interval*0.4)
 				{
-					// point to player
-					if(t > enemyCharacter1.interval*0.4)
-					{
-				       		enemyCharacter1.object[i]->transform->rotation.w += 6;
-					}
-					else
-					{
-				       		enemyCharacter1.object[i]->transform->rotation.w -= 6;
-					}
+			       		enemyCharacter1.object[i]->transform->rotation.w += 6;
 				}
 				else
 				{
-					// shot if player is in the front
-					if(t > enemyCharacter1.interval)
+			       		enemyCharacter1.object[i]->transform->rotation.w -= 6;
+				}
+			}
+			else
+			{
+				// shot if player is in the front
+				if(t > enemyCharacter1.interval)
+				{
+					if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
 					{
-						if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
-						{
-							Timer_reset_count(enemyCharacter1.timer[i]);
-							Vector2D v2;
-							Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
-							v2.y += 10;
-							shotEnemyBullet0(&v2, &v);
-						}
+						Timer_reset_count(enemyCharacter1.timer[i]);
+						Vector2D v2;
+						Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
+						v2.y += 10;
+						shotEnemyBullet0(&v2, &v);
 					}
 				}
 			}
-		if(pbo->transform->position.x < -50)
-		{
-			Object_set_invalid(pbo);
-			enemyCharacter1.collider[i]->isValid = false;
-			//pbo->transform->position.x = view->window_width;
-			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+			if(pbo->transform->position.x < -100 || (pbo->transform->position.x < WINDOW_WIDTH &&(view->window_width < pbo->transform->position.x || pbo->transform->position.y < 0 || view->window_height+8 < pbo->transform->position.y)))
+			{
+				DPIF(false, "bye! enemy1\n");
+				Object_set_invalid(pbo);
+				enemyCharacter1.collider[i]->isValid = false;
+				//pbo->transform->position.x = view->window_width;
+				//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
 
+			}
 		}
 	}
 }
@@ -1920,7 +2204,6 @@ void moveEnemyCharacter2()
 					DPIF(false, "%p is destroyed by %p\n", enemyCharacter2.collider[i], enemyCharacter2.collider[i]->hits[0]);
 					Object_set_invalid(pbo);
 					enemyCharacter2.collider[i]->isValid = false;
-					Audio_play(enemyCharacter2.audioDestroy);
 				}
 			}
 			bool isValid;
@@ -1978,7 +2261,7 @@ void moveEnemyBullet0()
 			pbo->transform->position.y += eb->speed * spf * eb->direction[i].y;
 
 
-			if(pbo->transform->position.x < -100 || view->window_width < pbo->transform->position.x || pbo->transform->position.y < 0 || view->window_height+8 < pbo->transform->position.y)
+			if(pbo->transform->position.x < -100)
 			{
 				Object_set_invalid(pbo);
 				eb->collider[i]->isValid = false;
@@ -1992,7 +2275,6 @@ void moveEnemyBullet0()
 		}
 	}
 }
-
 
 void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
 {
@@ -2011,8 +2293,8 @@ void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
 		}
 		else
 		{
-			DEIF(true, "couldnt add enemy %d\n", i);
-			break;
+			DEIF(true, "couldnt add an enemy %d\n", i);
+			//break;
 		}
 	}
 }
@@ -2034,8 +2316,8 @@ void addEnemyCharacter1(Vector2D* const pos, const double offset, const int star
 		}
 		else
 		{
-			DEIF(true, "couldnt add an enemy %d\n", i);
-			break;
+			DEIF(true, "couldnt add an enemy1 %d\n", i);
+			//break;
 		}
 	}
 }
@@ -2061,9 +2343,6 @@ void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict)
 				Vector2D_normalize(&(enemyBullet0.direction[i]));
 				if( fabs(v.x - enemyBullet0.direction[i].x) > 0.01  || fabs(v.y - enemyBullet0.direction[i].y) > 0.01)
 				{
-					// fg red
-					DE("\x1b[41m");
-
 					DE("vec2 dict is not normalized");
 
 					// fg black
@@ -2288,6 +2567,11 @@ void initBackground()
 
 void moveBackground()
 {
+	if(sphinxNow == true)
+	{
+		return;
+	}
+
 	double spf;
 	Timer_get_spf(backTimer, &spf);
 	
@@ -2328,9 +2612,11 @@ void initDestroyEffect()
 	eb->masterObject = Object_new();
 	eb->image0 = Image2D_new();
 	eb->masterTimer = Timer_new();
+	eb->audioDestroy = Audio_new(DESTROY_EFFECT_NUM);
 	eb->fadeTime = DESTROY_EFFECT_FADETIME;
 	
 	Image2D_load(eb->image0, "resource/image/enemy/plane/destroy.png");
+	Audio_load(eb->audioDestroy, "resource/audio/enemy/plane/destroy/0.wav");
 	eb->image0->option = IMAGE2D_CENTER;
 
 	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
@@ -2362,6 +2648,7 @@ void addDestroyEffect(Vector2D* const pos)
 			Timer_reset_count(destroyEffect0.timer[i]);
 			Object_set_valid(destroyEffect0.object[i]);
 			Vector2D_set(&(destroyEffect0.object[i]->transform->position), pos);
+			Audio_play(destroyEffect0.audioDestroy);
 			return;
 		}
 	}
@@ -2427,7 +2714,6 @@ Animation2D* wave4animation;
 void stage0_init()
 {
 	Object* pyramidObj0;
-	Object* groundObj0;
 	Image2D* pyramidImg;
 	Image2D* groundImg;
 	Collider2D* pyramidCol;
@@ -2470,10 +2756,15 @@ void stage0_init()
 	prc->size.x = 60;
 	prc->size.y = 60;
 
-	groundObj0->transform->position.x = 5000;
+	int w;
+	stage0ground0Offset = 5000;
+	stage0ground0length = stage0_moving_speed * stage0ground0time;
+	Image2D_get_width(groundImg, &w);
+
+	groundObj0->transform->position.x = stage0ground0Offset;
 	groundObj0->transform->position.y = WINDOW_HEIGHT-50;
-	groundObj0->transform->scale.x = 10000;
-	groundObj0->transform->scale.y = 10000;
+	groundObj0->transform->scale.x = stage0ground0length/ (double)w;
+	groundObj0->transform->scale.y = 10;
 
 	pyramidObj0->transform->scale.x = 4;
 	pyramidObj0->transform->scale.y = 4;
@@ -2579,11 +2870,11 @@ void stage0_update()
 	static bool enemyWave1 = false;
 
 	const double enemyFollow0start = 10.0;
-	const double enemyFollow0length = 100.0;
+	const double enemyFollow0length = 5.0;
 	static bool enemyFollow0 = false;
 
 	const double enemyFollow1start = 13.0;
-	const double enemyFollow1length = 100.0;
+	const double enemyFollow1length = 5.0;
 	static bool enemyFollow1 = false;
 
 	const double enemyWave2start = 20.0;
@@ -2595,7 +2886,7 @@ void stage0_update()
 	static bool enemyWave3 = false;
 
 	const double enemyFollow2start = 30.0;
-	const double enemyFollow2length = 100.0;
+	const double enemyFollow2length = 5.0;
 	static bool enemyFollow2 = false;
 
 	const double enemyWave4start = 35.0;
@@ -2653,7 +2944,10 @@ void stage0_update()
 	if(st > enemyWave3start + enemyWave3length){enemyWave3 = false;Animation2D_reset(wave3animation);Animation2D_reset(wave3childAnimation);}
 
 	// stage 
-	stage0->transform->position.x -= stage0_moving_speed*spf;
+	if(sphinxNow == false)
+	{
+		groundObj0->transform->position.x -= stage0_moving_speed*spf;
+	}
 
 	if(st > stage0appear && stage0v == false){Object_set_valid(stage0); stage0v = true;}
 
@@ -2666,6 +2960,35 @@ void stage0_update()
 	// wave 4 
 	if(enemyWave4 == false && st > enemyWave4start && st < enemyWave4start + enemyWave4length) {addEnemyCharacter0(&v, 16, 24); enemyWave4 = true;DPIF(true,"w4\n");}		
 	if(st > enemyWave4start + enemyWave4length){enemyWave4 = false;Animation2D_reset(wave4animation);Animation2D_reset(wave4childAnimation);}
+
+
+
+
+
+
+
+
+	// next lap
+	if(sphinx.hp2 <= 0 && groundObj0->transform->position.x < -stage0ground0length)
+	{
+	stage0v = false;
+	enemyWave0 = false;
+	enemyWave1 = false;
+	enemyFollow0 = false;
+	enemyFollow1 = false;
+	enemyWave2 = false;
+	enemyWave3 = false;
+	enemyFollow2 = false;
+	enemyWave4 = false;
+	Timer_reset_count(stage0Timer);
+	groundObj0->transform->position.x = stage0ground0Offset;
+	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
+	setSphinxColValid();
+	Animation2D_play(bossReset);
+
+	DP("clear\n");
+
+	}
 
 }
 

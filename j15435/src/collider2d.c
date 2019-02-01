@@ -255,7 +255,7 @@ void Collider2D_judge(Collider2D* const c1, Collider2D* const c2)
 
 	if(hitFlag == true)
 	{
-		DPIF(true, "detect collision : %p x %p\n", c1, c2);
+		DPIF(false, "collision id detected: %p x %p\n", c1, c2);
 		addHits(c1, c2);
 		addHits(c2, c1);
 	}
