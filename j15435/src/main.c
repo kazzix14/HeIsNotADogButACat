@@ -40,7 +40,7 @@
 
 #define PLAYER_CHARACTER_DEFAULT_SPEED 130
 #define PLAYER_CHARACTER_DEFAULT_HP 100
-#define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 1200
+#define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 800
 #define PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL 0.01
 #define PLAYER_CHARACTER_DEFAULT_BULLET_NUM 1
 #define PLAYER_CHARACTER_BULLET_NUM_LIMIT 8
@@ -65,7 +65,7 @@
 #define POWERUPCORE_DEFAULT_NUM 16
 #define POWERUPCORE_DEFAULT_SPEED 100
 #define POWERUPCORE_OBTAIN_SPEED 30
-#define POWERUPCORE_OBTAIN_BULLETSPEED 30
+#define POWERUPCORE_OBTAIN_BULLETSPEED 200
 #define POWERUPCORE_SPEEDUP_TAG "pusp"
 #define POWERUPCORE_BULLETSPEEDUP_TAG "pubs"
 #define POWERUPCORE_BULLETNUMINCREASE_TAG "pubn"
@@ -346,7 +346,7 @@ Object* stage0;
 Object* groundObj0;
 double stage0_moving_speed = 120;
 double stage0ground0length;
-double stage0ground0time = 80;
+double stage0ground0time = 60;
 double stage0ground0Offset;
 Timer* stage0Timer;
 
@@ -730,32 +730,32 @@ void initPlayerBullet0()
 
 void movePlayerCharacter()
 {
-	if(Keyboard_is_down('a'))
+	if(Keyboard_is_down('a') || Keyboard_is_down('k'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.x -= spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('d'))
+	if(Keyboard_is_down('d') || Keyboard_is_down(';'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.x += spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('w'))
+	if(Keyboard_is_down('w') || Keyboard_is_down('o'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.y -= spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('s'))
+	if(Keyboard_is_down('s') || Keyboard_is_down('l'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.y += spf * playerCharacter.speed;
 	}
 
-	if(Keyboard_is_pressed('j'))
+	if(Keyboard_is_pressed('j') || Keyboard_is_pressed('f'))
 	{
 		double count;
 		Timer_get_count(playerBullet0.timer, &count);
@@ -788,8 +788,8 @@ void movePlayerCharacter()
 	if(playerCharacter.collider->hits[0] != NULL)
 	{
 		bool pucore = false;
-		bool enemy = false;
-		char tag[COLLIDER2D_HITS_NUM][4];
+		bool damage = false;
+		char tag[COLLIDER2D_HITS_NUM][COLLIDER2D_TAG_LENGTH];
 		int tagnum = 0;
 		for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
 		{
@@ -798,12 +798,12 @@ void movePlayerCharacter()
 				if(strncmp(playerCharacter.collider->hits[i]->tag, "pu", 2) == 0)
 				{
 					pucore = true;
-					strncpy(playerCharacter.collider->hits[i]->tag, tag[tagnum], COLLIDER2D_TAG_LENGTH);
+					strncpy(tag[tagnum], playerCharacter.collider->hits[i]->tag, COLLIDER2D_TAG_LENGTH);
 					tagnum++;
 				}
-				if(strncmp(playerCharacter.collider->hits[i]->tag, "en", 2) == 0)
+				else
 				{
-					enemy = true;
+					damage = true;
 				}
 			}
 		}
@@ -812,17 +812,17 @@ void movePlayerCharacter()
 		{
 			for(int i = 0; i < tagnum; i++)
 			{
-				if(strncmp(tag[i], POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH))
+				if(strncmp(tag[i], POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
 					playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
 					DPIF(true, "pc speed up");
 				}
-				else if(strncmp(tag[i], POWERUPCORE_BULLETSPEEDUP_TAG, COLLIDER2D_TAG_LENGTH))
+				else if(strncmp(tag[i], POWERUPCORE_BULLETSPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
 					playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
 					DPIF(true, "pb speed up");
 				}
-				else if(strncmp(tag[i], POWERUPCORE_BULLETNUMINCREASE_TAG, COLLIDER2D_TAG_LENGTH))
+				else if(strncmp(tag[i], POWERUPCORE_BULLETNUMINCREASE_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
 					if(playerBullet0.bulletNum < PLAYER_CHARACTER_BULLET_NUM_LIMIT-1)
 					{
@@ -832,7 +832,7 @@ void movePlayerCharacter()
 				}
 			}
 		}
-		if(enemy == true)
+		if(damage == true)
 		{
 			playerCharacter.hp -= 33;
 			addDestroyEffect(&playerCharacter.object->transform->position);
@@ -844,6 +844,7 @@ void movePlayerCharacter()
 				   "---------------------------------------------------------\n\x1b[40m"
 				);
 				playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+				exit(0);
 			}
 		}
 		//exit(0);
@@ -1252,6 +1253,7 @@ void initSphinx()
 	Object_set_invalid(sphinx.lazer);
 
 	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
+	DPIF(true, "sphinx child obj x : %f\n",sphinx.childObject->transform->position.x);
 	sphinx.childObject->transform->position.y = WINDOW_HEIGHT - 50;
 
 	bossStandUpAnim = Animation2D_new();
@@ -1577,6 +1579,7 @@ void moveSphinx()
 		if(sphinxNow == false)
 		{
 			sphinxNow = true;	
+			setSphinxColValid();
 		}
 
 		if(hp20 == true)
@@ -1589,7 +1592,6 @@ void moveSphinx()
 			Object_set_invalid(sphinx.masterObject);
 			sphinxNow = false;
 			setSphinxColInvalid();
-			hp20 = false;
 			//sphinx.hp2 = SPHINX_DEFAULT_HP2;
 		}	
 		if(hp10 == true)
@@ -1673,7 +1675,7 @@ void moveSphinx()
 					Vector2D v2;
 					v2.x = 784;
 					v2.y = 196;
-					addEnemyCharacter1(&v2, 10, 16, 19);
+					addEnemyCharacter1(&v2, 10, 16, 18);
 					go = false;
 				}
 			}
@@ -1737,7 +1739,7 @@ void moveSphinx()
 			if(sphinx.jwcol->hits[0] != NULL) flag = true;
 
 			if(sphinx.eycol->hits[0] != NULL) flag2 = true;
-			if(sphinx.blcol->hits[0] != NULL) flag2 = true;
+			//if(sphinx.blcol->hits[0] != NULL) flag2 = true;
 
 			if(flag2 == true)
 			{
@@ -1803,7 +1805,7 @@ void moveSphinx()
 			if(sphinx.jwcol->hits[0] != NULL) flag = true;
 
 			if(sphinx.eycol->hits[0] != NULL) flag2 = true;
-			if(sphinx.blcol->hits[0] != NULL) flag2 = true;
+			//if(sphinx.blcol->hits[0] != NULL) flag2 = true;
 
 			if(flag2 == true)
 			{
@@ -1824,6 +1826,7 @@ void moveSphinx()
 		sphinx.childObject->transform->position.x -= spf * stage0_moving_speed;
 		if(sphinxNow == true)
 		{
+			hp20 = false;
 			sphinxNow = false;	
 		}
 	}
@@ -2018,7 +2021,7 @@ void initEnemyCharacter2()
 	Image2D_load(enemyCharacter2.image0, "resource/image/enemy/vehicle/0t.png");
 	Image2D_load(enemyCharacter2.image1, "resource/image/enemy/vehicle/0c.png");
 
-	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
 	{
 		enemyCharacter2.object[i] = Object_new();
 		enemyCharacter2.cannonObject[i] = Object_new();
@@ -2762,6 +2765,7 @@ void stage0_init()
 	Image2D_get_width(groundImg, &w);
 
 	groundObj0->transform->position.x = stage0ground0Offset;
+	DPIF(true, "ground obj 0 x : %f\n",groundObj0->transform->position.x);
 	groundObj0->transform->position.y = WINDOW_HEIGHT-50;
 	groundObj0->transform->scale.x = stage0ground0length/ (double)w;
 	groundObj0->transform->scale.y = 10;
@@ -2983,8 +2987,10 @@ void stage0_update()
 	Timer_reset_count(stage0Timer);
 	groundObj0->transform->position.x = stage0ground0Offset;
 	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
-	setSphinxColValid();
 	Animation2D_play(bossReset);
+
+	sphinx.hp2 = SPHINX_DEFAULT_HP2;
+	sphinx.hp1 = SPHINX_DEFAULT_HP1;
 
 	DP("clear\n");
 
