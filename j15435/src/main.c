@@ -2039,7 +2039,6 @@ void addEnemyCharacter1(Vector2D* const pos, const double offset, const int star
 		}
 	}
 }
-
 void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict)
 {
 	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
