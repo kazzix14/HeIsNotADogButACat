@@ -80,9 +80,13 @@
 #define SPHINX_DEFAULT_HP1 127
 #define SPHINX_DEFAULT_HP2 127
 
+#define SCORE_STRING_LENGTH 21
+
 typedef struct playerbullet0 PlayerBullet0;
 typedef struct enemybullet0 EnemyBullet0;
 
+// struct definitions
+// {{{
 typedef struct playercharacter
 {
 	Object* object;
@@ -239,7 +243,10 @@ struct waveargstruct
 	double yLength;
 	double indexoffset;
 };
+// }}}
 
+// prototypes
+// {{{
 void display(void);
 void reshape(int, int);
 void timer(int);
@@ -302,13 +309,18 @@ void moveStopMove(Vector2D* const ret, const int f, const int i, const int fmax,
 void circleCircleCircle(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* radiusd);
 void moveStopMoveStraight(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct);
 
+void updateScoreObj();
+void incScore(unsigned long long);
+// }}}
+
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
    // // // // // // // // // // // // // // // // // // // // // // // // // // // 
   // // // // // // // // // // // // // // // // // // // // // // // // // // //
  // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
-
+// variable
+// {{{
 View* view;
 
 double totaltime = 0;
@@ -331,6 +343,7 @@ Boss0 sphinx;
 bool sphinxNow;
 double timeSphinxApper = 80;
 
+Object* scoreObject;
 
 Object* backbase;
 Object* back1;
@@ -343,15 +356,21 @@ Timer* backTimer;
 int backgroundWidth;
 
 Object* stage0;
-Object* groundObj0;
 double stage0_moving_speed = 120;
-double stage0ground0length;
-double stage0ground0time = 60;
 double stage0ground0Offset;
 Timer* stage0Timer;
 
-long long score;
+unsigned long long currentLap;
+unsigned long long score;
+const unsigned long long enemy0score = 100;
+const unsigned long long enemy1score = 200;
+const unsigned long long powerupCoreScore = 500;
+const unsigned long long sphinxScore = 5000;
 
+// }}}
+
+// main
+// {{{
 int main(int argc, char **argv)
 {
 	srand(1);
@@ -360,8 +379,11 @@ int main(int argc, char **argv)
 	
 	view = View_new();
 	view->position.z = 1;
+
 	view->window_width = WINDOW_WIDTH;
 	view->window_height = WINDOW_HEIGHT;
+
+	currentLap = 1;
 
 	initPlayerCharacter();
 	initPlayerBullet0();
@@ -382,7 +404,10 @@ int main(int argc, char **argv)
 	
 	return(0);
 }
+// }}}
 
+// display
+// {{{
 void display(void)
 {
 	glClear(GL_COLOR_BUFFER_BIT);
@@ -400,13 +425,17 @@ void display(void)
 		Object_put(playerBullet0.masterObject);
 		Object_put(enemyBullet0.masterObject);
 		Object_put(powerupCore.masterObject);
+		Object_put(scoreObject);
 		Collider2D_judge_all();
 	View_end_2d();
 
 	glFlush();
 	glutSwapBuffers();
 }
+// }}}
 
+/// timer
+// {{{
 void timer(int value)
 {
 	// 60 fps
@@ -428,22 +457,24 @@ void timer(int value)
 	moveDestroyEffect();
 	moveSphinx();
 
+	updateScoreObj();
+
 	fps();
 }
+// }}}
 
+// reshape 
+// {{{
 void reshape(int w, int h)
 {
 	glViewport(0, 0, w, h);
 //	view->window_width = w;
 //	view->window_height = h;
 } 
+// }}}
 
-void getWindowSize(int *x, int *y)
-{
-	*x = glutGet(GLUT_WINDOW_WIDTH);
-	*y = glutGet(GLUT_WINDOW_HEIGHT);
-}
-
+// init_gl
+// {{{
 void init_gl(int *argc, char **argv, GLuint width, GLuint height, char *title)
 {
 	glutInit(argc, argv);
@@ -463,12 +494,10 @@ void init_gl(int *argc, char **argv, GLuint width, GLuint height, char *title)
 	glutMouseFunc(mouse);
 	Keyboard_init();
 }
+// }}}
 
-void *init(void* argp)
-{
-  return NULL;
-}
-
+// fps
+// {{{
 void fps()
 {
 	static int count=0;
@@ -487,12 +516,18 @@ void fps()
 	}
 
 }
+// }}}
 
+// mouse
+// {{{
 void mouse(int b, int s, int x, int y)
 {
 
 }
+// }}}
 
+// keyboard
+// {{{
 void keyboard()
 {
 	if(Keyboard_is_pressed(27))
@@ -504,92 +539,13 @@ void keyboard()
 		sphinx.larm->transform->rotation.w += 3;
 	if(Keyboard_is_down('n'))
 		sphinx.body->transform->rotation.w += 3;
-	/*
-	if(rand() % 70)
-	{
-		double count;
-		Timer_get_count(enemyCharacter0.masterTimer, &count);
-		if(count > 0.5)
-		{
-			DPIF(false, "count:%f\n", count);
-			Timer_reset_count(enemyCharacter0.masterTimer);
-			// add enemy
-			
-			for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
-			{
-				bool isValid;
-				Object_is_valid(enemyCharacter0.object[i], &isValid);
-				if(isValid == false)
-				{
-					DPIF(false, "i:%d\n", i);
-					Object_set_valid(enemyCharacter0.object[i]);
-					enemyCharacter0.collider[i]->isValid = true;
-					enemyCharacter0.object[i]->transform->position.y = rand()%view->window_height;
-					enemyCharacter0.object[i]->transform->position.x = view->window_width;
-					Timer_set_count(enemyCharacter0.timer[i], enemyCharacter0.interval);
-					break;
-				}
-			}
-			
-			//
-		}
-	}
-	*/
-	
-	// enemy shot
-	/*
-	for(int ei = 0; ei < ENEMY_CHARACTER0_DEFAULT_NUM; ei++)
-	{
-		bool isValid;
-		Object_is_valid(enemyCharacter0.object[ei], &isValid);
-		if(isValid == false) continue;
-
-		if(rand() % 50 == 0)
-		{
-			double count;
-			Timer_get_count(enemyCharacter0.timer[ei], &count);
-
-			if(count > enemyCharacter0.interval)
-			{
-				DPIF(false, "count:%f\n", count);
-				Timer_reset_count(enemyCharacter0.timer[ei]);
-
-				//
-				for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
-				{
-					bool isValid;
-					Object_is_valid(enemyBullet0.object[i], &isValid);
-					if(isValid == false)
-					{
-						DPIF(false, "i:%d\n", i);
-						Object_set_valid(enemyBullet0.object[i]);
-						enemyBullet0.collider[i]->isValid = true;
-						enemyBullet0.object[i]->transform->position.x = enemyCharacter0.object[ei]->transform->position.x;
-						enemyBullet0.object[i]->transform->position.y = enemyCharacter0.object[ei]->transform->position.y;
-
-						// direction
-						Vector2D_set(&(enemyBullet0.direction[i]), &(playerCharacter.object->transform->position));
-						Vector2D_sub(&(enemyBullet0.direction[i]), &(enemyBullet0.object[i]->transform->position));
-
-						enemyBullet0.direction[i].x += rand()%300-150;
-						enemyBullet0.direction[i].y += rand()%300-150;
-
-						Vector2D_normalize(&(enemyBullet0.direction[i]));
-
-						Audio_play(enemyBullet0.audioShot);
-						break;
-					}
-				}
-				//
-			}
-		}
-	}
-	*/
 
 	Keyboard_update();
-
 }
+// }}}
 
+// set collider layer matrix
+// {{{
 void setColliderLayerMatrix()
 {
 	/*
@@ -652,7 +608,10 @@ void setColliderLayerMatrix()
 	Collider2D_set_layer_matrix(lm);
 
 }
+// }}}
 
+// init pc pb0
+// {{{
 void initPlayerCharacter()
 {
 	playerCharacter.object = Object_new();
@@ -727,7 +686,10 @@ void initPlayerBullet0()
 		Object_set_invalid(pbo);
 	}
 }
+// }}}
 
+// move pc
+// {{{
 void movePlayerCharacter()
 {
 	if(Keyboard_is_down('a') || Keyboard_is_down('k'))
@@ -853,7 +815,10 @@ void movePlayerCharacter()
 	//
 	////
 }
+// }}}
 
+// move pb0
+// {{{
 void movePlayerBullet0()
 {
 	double spf;
@@ -874,7 +839,7 @@ void movePlayerBullet0()
 				{
 					if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc0", COLLIDER2D_TAG_LENGTH) == 0)
 					{
-						score += 100;
+						incScore(enemy0score);
 						DP("score : %lld\n", score);
 						numDestroy++;
 						if(numDestroy %8 == 0)
@@ -890,7 +855,10 @@ void movePlayerBullet0()
 						}
 					}else if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc1", COLLIDER2D_TAG_LENGTH) == 0)
 					{
-						score += 200;
+						if(sphinxNow == false)
+						{
+							incScore(enemy1score);
+						}
 						DP("score : %lld\n", score);
 						numDestroy++;
 						if(numDestroy %8 == 0)
@@ -919,6 +887,10 @@ void movePlayerBullet0()
 		}
 	}
 }
+// }}}
+
+// sphinx init
+//  {{{
 
 Animation2D* bossStandUpAnim;
 Animation2D* bossPunch;
@@ -1256,6 +1228,8 @@ void initSphinx()
 	DPIF(true, "sphinx child obj x : %f\n",sphinx.childObject->transform->position.x);
 	sphinx.childObject->transform->position.y = WINDOW_HEIGHT - 50;
 
+	//Object_add_component(stage0, sphinx.masterObject);
+
 	bossStandUpAnim = Animation2D_new();
 	bossPunch = Animation2D_new();
 	bossSweep = Animation2D_new();
@@ -1560,8 +1534,10 @@ void initSphinx()
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.headp->transform->position), &(sphinx.headp->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 
 }
+// }}}
 
-
+// sphinx update
+// {{{
 void moveSphinx()
 {
 	static bool hp10 = false;
@@ -1574,7 +1550,7 @@ void moveSphinx()
 
 	Vector2D v;
 	
-	if(sphinx.childObject->transform->position.x < 850)
+	if(sphinx.childObject->transform->position.x < 850 && hp20 == false)
 	{
 		if(sphinxNow == false)
 		{
@@ -1584,15 +1560,6 @@ void moveSphinx()
 
 		if(hp20 == true)
 		{
-			child = false;
-			sweep = false;
-			punch = false;
-			lazer = false;
-			Object_set_invalid(sphinx.lazer);
-			Object_set_invalid(sphinx.masterObject);
-			sphinxNow = false;
-			setSphinxColInvalid();
-			//sphinx.hp2 = SPHINX_DEFAULT_HP2;
 		}	
 		if(hp10 == true)
 		{
@@ -1824,15 +1791,27 @@ void moveSphinx()
 		double spf;
 		Timer_get_spf(sphinx.timer, &spf);
 		sphinx.childObject->transform->position.x -= spf * stage0_moving_speed;
-		if(sphinxNow == true)
+			child = false;
+			sweep = false;
+			punch = false;
+			lazer = false;
+			Object_set_invalid(sphinx.lazer);
+			//Object_set_invalid(sphinx.masterObject);
+			sphinxNow = false;
+			setSphinxColInvalid();
+			//sphinx.hp2 = SPHINX_DEFAULT_HP2;
+		if(sphinx.hp2 > 0)
 		{
 			hp20 = false;
-			sphinxNow = false;	
+			hp10 = false;
 		}
 	}
 
 }
+// }}}
 
+// sphinx col
+// {{{
 void setSphinxColInvalid()
 {
 	sphinx.bdcol->isValid = false;
@@ -1859,7 +1838,10 @@ void setSphinxColValid()
 	sphinx.eycol->isValid = true;
 	sphinx.blcol->isValid = true;
 }
+// }}}
 
+// init enc0 enb0
+// {{{
 void initEnemyCharacter0()
 {
 	enemyCharacter0.masterObject = Object_new();
@@ -1907,6 +1889,7 @@ void initEnemyCharacter0()
 
 
 }
+
 
 void initEnemyBullet0()
 {
@@ -1959,7 +1942,10 @@ void initEnemyBullet0()
 		Object_set_invalid(pbo);
 	}
 }
+// }}}
 
+// init enc1 enc2
+// {{{
 void initEnemyCharacter1()
 {
 	enemyCharacter1.masterObject = Object_new();
@@ -2051,7 +2037,10 @@ void initEnemyCharacter2()
 		Object_add_component(enemyCharacter2.masterObject, enemyCharacter2.object[i]);
 	}
 }
+// }}}
 
+// move enc 0 1 2
+// {{{
 void moveEnemyCharacter0()
 {
 	int shotChance = 150;
@@ -2239,7 +2228,10 @@ void moveEnemyCharacter2()
 		}
 	}
 }
+// }}}
 
+// move enb 0
+// {{{
 void moveEnemyBullet0()
 {
 	EnemyBullet0* eb = &enemyBullet0;
@@ -2278,7 +2270,10 @@ void moveEnemyBullet0()
 		}
 	}
 }
+// }}}
 
+// add enc 0 1
+// {{{
 void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
 {
 	for(int i = start; i < end; i++)
@@ -2324,6 +2319,10 @@ void addEnemyCharacter1(Vector2D* const pos, const double offset, const int star
 		}
 	}
 }
+// }}}
+
+// add enb 0
+// {{{
 void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict)
 {
 	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
@@ -2358,7 +2357,10 @@ void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict)
 		}
 	}
 }
+// }}}
 
+// update timer
+// {{{
 void updateTimer()
 {
 	Timer_count(playerCharacter.timer);
@@ -2397,7 +2399,10 @@ void updateTimer()
 	Timer_count(sphinx.timer);
 	Timer_count(sphinx.lazerTimer);
 }
+// }}}
 
+// powerup core
+// {{{
 void initPowerupCore()
 {
 
@@ -2475,6 +2480,7 @@ void movePowerupCore()
 		if(eb->collider[i]->hits[0] != NULL)
 		{
 			DPIF(false, "hit\n");
+			incScore(powerupCoreScore);
 			Object_set_invalid(pbo);
 			eb->collider[i]->isValid = false;
 			Audio_play(powerupCore.audioGet);
@@ -2500,8 +2506,10 @@ void movePowerupCore()
 		}
 	}
 }
+// }}}
 
-
+// back ground
+// {{{
 void initBackground()
 {
 	backbase = Object_new();
@@ -2606,8 +2614,74 @@ void moveBackground()
 	}
 
 }
+// }}}
 
+// score
+// {{{
+void updateScoreObj()
+{
+	
+	static Image2D* inum[10];
+	static Image2D* iscore;
+	static bool isInitialized = false;
 
+	static Object* digiObj[SCORE_STRING_LENGTH];
+	static Object* scoreObjChild;
+
+	if(isInitialized == false)
+	{
+		isInitialized = true;
+		char path[64];
+
+		scoreObject = Object_new();
+		scoreObjChild = Object_new();
+
+		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
+		{
+			digiObj[i] = Object_new();
+			digiObj[i]->transform->position.x = 216 + i*33;
+			Object_add_component(scoreObjChild, digiObj[i]);
+		}
+
+		for(int i = 0; i < 10; i++)
+		{
+			snprintf(path, 64, "resource/image/text/number/%d.png", i);
+			inum[i] = Image2D_new();
+			Image2D_load(inum[i], path);
+			Object_add_component(digiObj[i], inum[i]);
+		}
+
+		iscore = Image2D_new();
+		iscore->p_transform->position.y = 6;
+		Image2D_load(iscore, "resource/image/text/score.png");
+
+		Object_add_component(scoreObjChild, iscore);
+		Object_add_component(scoreObject, scoreObjChild);
+
+		scoreObjChild->transform->scale.x = 0.5;
+		scoreObjChild->transform->scale.y = 0.5;
+	}
+
+	int d;
+	int dd;
+	for(int i = 0; i < SCORE_STRING_LENGTH; i++)
+	{
+		d = pow(10, i);
+		dd = pow(10, i+1);
+		Object_clear_component(digiObj[SCORE_STRING_LENGTH-1-i]);
+		Object_add_component(digiObj[SCORE_STRING_LENGTH-1-i], inum[(score%dd - score%d)/d]);
+	}
+
+}
+
+void incScore(unsigned long long scr)
+{
+	score += scr * currentLap;
+}
+// }}}
+
+// destroy fx
+// {{{
 void initDestroyEffect()
 {
 	DestroyEffect* eb = &destroyEffect0;
@@ -2691,6 +2765,7 @@ void moveDestroyEffect()
 		}
 	}
 }
+// }}}
 
     // // // // // // // // // // // // // // // // // // // // // // // // // // //
    // // // // // // // // // // // // // // // // // // // // // // // // // // // 
@@ -2698,6 +2773,9 @@ void moveDestroyEffect()
  // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
+
+// stage 0 init
+// {{{
 
 Animation2D* wave0childAnimation;
 Animation2D* wave0animation;
@@ -2714,9 +2792,13 @@ Animation2D* wave3animation;
 Animation2D* wave4childAnimation;
 Animation2D* wave4animation;
 
+Object* pyramidObj0;
+Object* groundObj0;
+double stage0ground0length;
+double stage0ground0time = 60;
+
 void stage0_init()
 {
-	Object* pyramidObj0;
 	Image2D* pyramidImg;
 	Image2D* groundImg;
 	Collider2D* pyramidCol;
@@ -2854,7 +2936,10 @@ void stage0_init()
 	setStageAnimation(wave4animation, 64, enemyCharacter0.object, 0.2, 16, 24, moveStopMoveStraight, &was);
 	setStageAnimation(wave4childAnimation, 16, enemyCharacter0.childObject, 0.1, 16, 24, circleCircleCircle, &radius);
 }
+// }}}
 
+// stage 0 update
+// {{{
 void stage0_update()
 {
 	double st;
@@ -2950,7 +3035,7 @@ void stage0_update()
 	// stage 
 	if(sphinxNow == false)
 	{
-		groundObj0->transform->position.x -= stage0_moving_speed*spf;
+		stage0->transform->position.x -= stage0_moving_speed*spf;
 	}
 
 	if(st > stage0appear && stage0v == false){Object_set_valid(stage0); stage0v = true;}
@@ -2973,7 +3058,7 @@ void stage0_update()
 
 
 	// next lap
-	if(sphinx.hp2 <= 0 && groundObj0->transform->position.x < -stage0ground0length)
+	if(sphinx.hp2 <= 0 && stage0->transform->position.x < -stage0ground0length-stage0ground0Offset)
 	{
 	stage0v = false;
 	enemyWave0 = false;
@@ -2984,21 +3069,29 @@ void stage0_update()
 	enemyWave3 = false;
 	enemyFollow2 = false;
 	enemyWave4 = false;
+	Object_set_invalid(stage0);
 	Timer_reset_count(stage0Timer);
-	groundObj0->transform->position.x = stage0ground0Offset;
-	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
+	stage0->transform->position.x = 0;
+	sphinx.childObject->transform->position.x = 850 + stage0_moving_speed * timeSphinxApper; // 60s
 	Animation2D_play(bossReset);
+	Animation2D_reset(bossStandUpAnim);
+	Object_set_valid(sphinx.masterObject);
+
 
 	sphinx.hp2 = SPHINX_DEFAULT_HP2;
 	sphinx.hp1 = SPHINX_DEFAULT_HP1;
+
+	currentLap++;
 
 	DP("clear\n");
 
 	}
 
 }
+// }}}
 
-
+// move funcs
+// {{{
 void moveStopMove(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct)
 {
 	Vector2D v;
@@ -3072,7 +3165,10 @@ void moveStopMoveStraight(Vector2D* const ret, const int f, const int i, const i
 	Vector2D_set(ret, &v);
 }
 
+// }}}
 
+// set stage anim
+// {{{
 void setStageAnimation(Animation2D* const anm, const int fnum, Object** const object, const double framelength, const int istart, const int iend, void func(Vector2D*, int, int, int, int, int , double, void*), void* arg)
 {
 	for(int f = 0; f < fnum; f++) // 64 * 0.2 : 12.8
@@ -3093,3 +3189,7 @@ void setStageAnimation(Animation2D* const anm, const int fnum, Object** const ob
 	}
 
 }
+
+
+// }}}
+

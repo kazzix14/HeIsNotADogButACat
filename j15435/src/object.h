@@ -28,6 +28,8 @@ typedef struct object
 
 Object* Object_new();
 void Object_add_component(Object* const, void* const);
+void Object_remove_component(Object* const, void* const);
+void Object_clear_component(Object* const);
 void Object_set_valid(Object* const);
 void Object_set_invalid(Object* const);
 void Object_is_valid(Object* const, bool* const);

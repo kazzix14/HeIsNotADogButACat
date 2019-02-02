@@ -61,6 +61,30 @@ void Object_add_component(Object* const this, void* const newComponent)
 	this->pv->componentNum++;
 }
 
+void Object_remove_component(Object* const this, void* const remComponent)
+{
+	bool found = false;
+	for(int i = 0; i < this->pv->componentNum; i++)
+	{
+		if(this->pv->components[i] == remComponent)
+		{
+			this->pv->componentNum--;
+			found = true;
+		}
+		if(found == true)
+		{
+			this->pv->components[i] = this->pv->components[i+1];
+		}
+	}
+	this->pv->components = (void**)realloc(this->pv->components, sizeof(void*) * (this->pv->componentNum));
+}
+
+void Object_clear_component(Object* const this)
+{
+	this->pv->components = (void**)realloc(this->pv->components, 0);
+	this->pv->componentNum = 0;
+}
+
 void Object_set_valid(Object* const this)
 {
 	this->pv->isValid = true;
