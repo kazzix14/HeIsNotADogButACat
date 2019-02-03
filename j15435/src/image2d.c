@@ -102,6 +102,11 @@ void Image2D_put_at(const Image2D* p_this, const Vector2D* position)
 		case IMAGE2D_CENTER:
 			x = -w/2;
 			y = -h/2;
+			break;
+		case IMAGE2D_CENTER_LEFT:
+			x = 0;
+			y = -h/2;
+			break;
 	}
 
 	View_begin();

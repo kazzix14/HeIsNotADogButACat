@@ -7,6 +7,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+
 #define GLUT_DISABLE_ATEXIT_HACK
 
 #include <GL/glut.h>
@@ -38,29 +39,32 @@
 #define WINDOW_WIDTH 1024
 #define WINDOW_HEIGHT 768
 
+#define PLAYER_CHARACTER_LIMIT_DOUBLE 8
 #define PLAYER_CHARACTER_DEFAULT_SPEED 130
+#define PLAYER_CHARACTER_LIMIT_SPEED 800
 #define PLAYER_CHARACTER_DEFAULT_HP 100
 #define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 800
+#define PLAYER_CHARACTER_BULLET_LIMIT_SPEED 1600
 #define PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL 0.01
 #define PLAYER_CHARACTER_DEFAULT_BULLET_NUM 1
-#define PLAYER_CHARACTER_BULLET_NUM_LIMIT 8
+#define PLAYER_CHARACTER_BULLET_NUM_LIMIT 64
 
 #define ENEMY_CHARACTER0_DEFAULT_NUM 32
 #define ENEMY_CHARACTER0_DEFAULT_SPEED 200
 #define ENEMY_CHARACTER0_DEFAULT_ACCELERATION 0
-#define ENEMY_CHARACTER0_DEFAULT_INTERVAL 2
-#define ENEMY_BULLET0_DEFAULT_NUM 64
+#define ENEMY_CHARACTER0_DEFAULT_INTERVAL 6
+#define ENEMY_BULLET0_DEFAULT_NUM 82
 #define ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED 350
 
-#define ENEMY_CHARACTER1_DEFAULT_NUM 24
-#define ENEMY_CHARACTER1_DEFAULT_SPEED 160
+#define ENEMY_CHARACTER1_DEFAULT_NUM 32
+#define ENEMY_CHARACTER1_DEFAULT_SPEED 100
 #define ENEMY_CHARACTER1_DEFAULT_ACCELERATION 0
-#define ENEMY_CHARACTER1_DEFAULT_INTERVAL 3
+#define ENEMY_CHARACTER1_DEFAULT_INTERVAL 6
 
-#define ENEMY_CHARACTER2_DEFAULT_NUM 16
-#define ENEMY_CHARACTER2_DEFAULT_SPEED 160
+#define ENEMY_CHARACTER2_DEFAULT_NUM 64
+#define ENEMY_CHARACTER2_DEFAULT_SPEED 30
 #define ENEMY_CHARACTER2_DEFAULT_ACCELERATION 0
-#define ENEMY_CHARACTER2_DEFAULT_INTERVAL 3
+#define ENEMY_CHARACTER2_DEFAULT_INTERVAL 3 
 
 #define POWERUPCORE_DEFAULT_NUM 16
 #define POWERUPCORE_DEFAULT_SPEED 100
@@ -70,9 +74,9 @@
 #define POWERUPCORE_BULLETSPEEDUP_TAG "pubs"
 #define POWERUPCORE_BULLETNUMINCREASE_TAG "pubn"
 
-#define BACKGROUND1_SPEED 30
-#define BACKGROUND2_SPEED 60
-#define BACKGROUND3_SPEED 100
+#define BACKGROUND1_SPEED 20
+#define BACKGROUND2_SPEED 40
+#define BACKGROUND3_SPEED 70
 
 #define DESTROY_EFFECT_FADETIME 0.15
 #define DESTROY_EFFECT_NUM 64
@@ -106,6 +110,7 @@ typedef struct playerbullet0
 	Collider2D* collider[PLAYER_CHARACTER_BULLET_NUM_LIMIT];
 	Image2D* image0;
 	Audio* audioShot;
+	Vector2D direction[PLAYER_CHARACTER_BULLET_NUM_LIMIT];
 
 	double speed;
 	double interval;
@@ -137,14 +142,15 @@ typedef struct enemycharacter2 // vehicle
 	Object* cannonObject[ENEMY_CHARACTER2_DEFAULT_NUM];
 	Object* tireObject[ENEMY_CHARACTER2_DEFAULT_NUM];
 	Collider2D* collider[ENEMY_CHARACTER2_DEFAULT_NUM];
+	Collider2D* collidert[ENEMY_CHARACTER2_DEFAULT_NUM];
 	Image2D* image0; // tire
 	Image2D* image1; // cannon
-	double speed[ENEMY_CHARACTER2_DEFAULT_SPEED];
+	double speed[ENEMY_CHARACTER2_DEFAULT_NUM];
 	double acceleration;
 	double interval;
 
 	Timer* masterTimer;
-	Timer* timer[ENEMY_CHARACTER0_DEFAULT_NUM];
+	Timer* timer[ENEMY_CHARACTER2_DEFAULT_NUM];
 } EnemyCharacter2;
 
 typedef struct boss0
@@ -281,16 +287,18 @@ void initEnemyCharacter1();
 void moveEnemyCharacter1();
 
 void initEnemyCharacter2();
+void moveEnemyCharacter2();
 
 void addEnemyCharacter0(Vector2D* const pos, const int start, const int end);
 void addEnemyCharacter1(Vector2D* const pos, const double offset, const int start, const int end);
+void addEnemyCharacter2(Vector2D* const pos);
 void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict);
 
 void updateTimer();
 
 void initPowerupCore();
 void movePowerupCore();
-void addPowerupCore(Vector2D* const pos, const char tag[COLLIDER2D_TAG_LENGTH]);
+void addPowerupCore(Vector2D* const pos);
 
 void initDestroyEffect();
 void addDestroyEffect(Vector2D* const pos);
@@ -325,9 +333,11 @@ View* view;
 
 double totaltime = 0;
 
+
 PlayerCharacter playerCharacter;
 PlayerBullet0 playerBullet0;
 long long numDestroy = 0;
+int pbDouble;
 
 EnemyCharacter0 enemyCharacter0;
 EnemyCharacter0 enemyCharacter1;
@@ -336,13 +346,15 @@ EnemyCharacter2 enemyCharacter2;
 EnemyBullet0 enemyBullet0;
 
 PowerupCore powerupCore;
+int powerupSelecter;
 
 DestroyEffect destroyEffect0;;
 
 Boss0 sphinx;
 bool sphinxNow;
 double timeSphinxApper = 80;
-
+int sphinxShotChance = 100;
+double sphinxLazerInterval = 0.6;
 Object* scoreObject;
 
 Object* backbase;
@@ -364,8 +376,14 @@ unsigned long long currentLap;
 unsigned long long score;
 const unsigned long long enemy0score = 100;
 const unsigned long long enemy1score = 200;
+const unsigned long long enemy2score = 150;
 const unsigned long long powerupCoreScore = 500;
-const unsigned long long sphinxScore = 5000;
+const unsigned long long sphinxScore = 10000;
+
+
+int enc0shotChance = 250;
+int enc1shotChance = 20;
+int enc2shotChance = 70;
 
 // }}}
 
@@ -390,6 +408,7 @@ int main(int argc, char **argv)
 	initEnemyCharacter0();
 	initEnemyBullet0();
 	initEnemyCharacter1();
+	initEnemyCharacter2();
 	initSphinx();
 
 	initDestroyEffect();
@@ -421,6 +440,7 @@ void display(void)
 		Object_put(playerCharacter.object);
 		Object_put(enemyCharacter0.masterObject);
 		Object_put(enemyCharacter1.masterObject);
+		Object_put(enemyCharacter2.masterObject);
 		Object_put(destroyEffect0.masterObject);
 		Object_put(playerBullet0.masterObject);
 		Object_put(enemyBullet0.masterObject);
@@ -451,8 +471,9 @@ void timer(int value)
 	movePlayerBullet0();
 	movePlayerCharacter();
 	moveEnemyCharacter0();
-	moveEnemyBullet0();
 	moveEnemyCharacter1();
+	moveEnemyCharacter2();
+	moveEnemyBullet0();
 	movePowerupCore();
 	moveDestroyEffect();
 	moveSphinx();
@@ -614,6 +635,8 @@ void setColliderLayerMatrix()
 // {{{
 void initPlayerCharacter()
 {
+	pbDouble = 0;
+	powerupSelecter = 0;
 	playerCharacter.object = Object_new();
 	playerCharacter.imageObject = Object_new();
 	playerCharacter.collider = Collider2D_new();
@@ -692,6 +715,42 @@ void initPlayerBullet0()
 // {{{
 void movePlayerCharacter()
 {
+	if(Keyboard_is_pressed('u') || Keyboard_is_pressed('e'))
+	{
+		switch(powerupSelecter)
+		{
+			case 1:// speed
+				if(playerCharacter.speed < PLAYER_CHARACTER_LIMIT_SPEED)
+				{
+					playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
+					powerupSelecter = 0;
+				}
+				break;
+			case 2:// bspeed
+				if(playerBullet0.speed < PLAYER_CHARACTER_BULLET_LIMIT_SPEED)
+				{
+					playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
+					powerupSelecter = 0;
+				}
+				break;
+			case 3://bnum
+				if(playerBullet0.bulletNum < PLAYER_CHARACTER_BULLET_NUM_LIMIT)
+				{
+					playerBullet0.bulletNum++;
+					powerupSelecter = 0;
+				}
+				break;
+			case 4://double
+				if(pbDouble < PLAYER_CHARACTER_LIMIT_DOUBLE)
+				{
+					pbDouble++;
+					powerupSelecter = 0;
+				}
+				break;
+		}
+
+	}
+
 	if(Keyboard_is_down('a') || Keyboard_is_down('k'))
 	{
 		double spf;
@@ -737,10 +796,37 @@ void movePlayerCharacter()
 					Audio_play(playerBullet0.audioShot);
 					playerBullet0.object[i]->transform->position.x = playerCharacter.object->transform->position.x + 60;
 					playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 8;
+					playerBullet0.direction[i].x = 1.0;
+					playerBullet0.direction[i].y = 0.0;
+					if(pbDouble > 0)
+					{
+						for(int a = 0; a < pbDouble; a++)
+						{
+							for(int i = PLAYER_CHARACTER_BULLET_NUM_LIMIT-1; i >= 0; i--)
+							{
+								bool isValid;
+								Object_is_valid(playerBullet0.object[i], &isValid);
+								if(isValid == false)
+								{
+									DPIF(false, "i:%d\n", i);
+									Object_set_valid(playerBullet0.object[i]);
+									playerBullet0.collider[i]->isValid = true;
+									Audio_play(playerBullet0.audioShot);
+									playerBullet0.object[i]->transform->position.x = playerCharacter.object->transform->position.x + 60;
+									playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 8;
+									playerBullet0.direction[i].x = 1.0;
+									playerBullet0.direction[i].y = (((double)rand()/(double)RAND_MAX)-0.5)*pbDouble/PLAYER_CHARACTER_LIMIT_DOUBLE;
+									Vector2D_normalize(&playerBullet0.direction[i]);
+									break;
+								}
+							}
+						}
+					}
 					break;
 				}
 			}
 		}
+		
 	}
 
 	////
@@ -772,40 +858,52 @@ void movePlayerCharacter()
 
 		if(pucore == true)
 		{
+			/*
 			for(int i = 0; i < tagnum; i++)
 			{
+			
 				if(strncmp(tag[i], POWERUPCORE_SPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
 					playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
-					DPIF(true, "pc speed up");
+					DPIF(true, "pc speed up\n");
 				}
 				else if(strncmp(tag[i], POWERUPCORE_BULLETSPEEDUP_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
-					playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
-					DPIF(true, "pb speed up");
+					if(playerBullet0.speed < PLAYER_CHARACTER_BULLET_LIMIT_SPEED)
+					{	
+						playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
+						DPIF(true, "pb speed up\n");
+					}
 				}
 				else if(strncmp(tag[i], POWERUPCORE_BULLETNUMINCREASE_TAG, COLLIDER2D_TAG_LENGTH) == 0)
 				{
 					if(playerBullet0.bulletNum < PLAYER_CHARACTER_BULLET_NUM_LIMIT-1)
 					{
 						playerBullet0.bulletNum += 1;
-						DPIF(true, "pb num inc");
+						DPIF(true, "pb num inc\n");
 					}
 				}
+				
 			}
+			*/
+			powerupSelecter = ( powerupSelecter + 1 ) % 5;
+
 		}
 		if(damage == true)
 		{
-			playerCharacter.hp -= 33;
+			playerCharacter.hp -= 25;
 			addDestroyEffect(&playerCharacter.object->transform->position);
-			if(playerCharacter.hp < 0)
+			if(playerCharacter.hp <= 0)
 			{
-				DPIF(true,
-				   "\x1b[41m---------------------------------------------------------\n"
-				   "You Died!!\n"
-				   "---------------------------------------------------------\n\x1b[40m"
-				);
-				playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+				DDO(
+					DPIF(true,
+					   "\x1b[41m---------------------------------------------------------\n"
+					   "You Died!!\n"
+					   "---------------------------------------------------------\n\x1b[40m"
+					);
+					playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+					return;
+				)
 				exit(0);
 			}
 		}
@@ -840,18 +938,10 @@ void movePlayerBullet0()
 					if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc0", COLLIDER2D_TAG_LENGTH) == 0)
 					{
 						incScore(enemy0score);
-						DP("score : %lld\n", score);
 						numDestroy++;
-						if(numDestroy %8 == 0)
+						if(sphinxNow == false && numDestroy %8 == 0)
 						{
-							if(rand() % 2 == 0)
-							{
-								addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_BULLETSPEEDUP_TAG);
-							}
-							else
-							{
-								addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_BULLETNUMINCREASE_TAG);
-							}
+							addPowerupCore(&playerBullet0.object[i]->transform->position);
 						}
 					}else if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc1", COLLIDER2D_TAG_LENGTH) == 0)
 					{
@@ -859,21 +949,31 @@ void movePlayerBullet0()
 						{
 							incScore(enemy1score);
 						}
-						DP("score : %lld\n", score);
 						numDestroy++;
-						if(numDestroy %8 == 0)
+						if(sphinxNow == false && numDestroy %8 == 0)
 						{
-							addPowerupCore(&playerBullet0.object[i]->transform->position, POWERUPCORE_SPEEDUP_TAG);
+							addPowerupCore(&playerBullet0.object[i]->transform->position);
+						}
+					}
+					else if(strncmp(playerBullet0.collider[i]->hits[j]->tag, "enc2", COLLIDER2D_TAG_LENGTH) == 0)
+					{
+						incScore(enemy2score);
+						numDestroy++;
+						if(sphinxNow == false && numDestroy %8 == 0)
+						{
+							addPowerupCore(&playerBullet0.object[i]->transform->position);
 						}
 					}
 				}
 			}
+			DP("score : %lld\n", score);
 		}
 
 		if(isValid == true)
 		{
-			pbo->transform->position.x += playerBullet0.speed * spf;
-			if(pbo->transform->position.x > view->window_width)
+			pbo->transform->position.x += playerBullet0.speed * spf * playerBullet0.direction[i].x;
+			pbo->transform->position.y += playerBullet0.speed * spf * playerBullet0.direction[i].y;
+			if(pbo->transform->position.x > view->window_width || pbo->transform->position.y > WINDOW_HEIGHT || pbo->transform->position.y < 0-10)
 			{
 				Object_set_invalid(pbo);
 				playerBullet0.collider[i]->isValid = false;
@@ -898,6 +998,11 @@ Animation2D* bossSweep;
 Animation2D* bossHead;
 Animation2D* bossJaw;
 Animation2D* bossReset;
+
+Animation2D* bossPreLazer0;
+Object* prering;
+Object* prewhite;
+Object* preblack;
 
 void initSphinx()
 {
@@ -1221,6 +1326,7 @@ void initSphinx()
 	sphinxNow = false;
 	double neww;
 	Vector2D v;
+	bool b;
 
 	Object_set_invalid(sphinx.lazer);
 
@@ -1237,10 +1343,127 @@ void initSphinx()
 	bossJaw = Animation2D_new();
 	bossReset = Animation2D_new();
 
+
+	bossPreLazer0 = Animation2D_new();
+	Image2D* ipreblack;
+	Image2D* iprewhite;
+	Image2D* iprering;
+	preblack = Object_new();
+	prewhite = Object_new();
+	prering = Object_new();
+	ipreblack = Image2D_new();
+	iprewhite = Image2D_new();
+	iprering = Image2D_new();
+	ipreblack->option = IMAGE2D_CENTER;
+	iprewhite->option = IMAGE2D_CENTER;
+	iprering->option = IMAGE2D_CENTER;
+
+	Image2D_load(iprering, "resource/image/enemy/boss/prelazerring.png");
+	Image2D_load(iprewhite, "resource/image/enemy/boss/prelazerwhite.png");
+	Image2D_load(ipreblack, "resource/image/enemy/boss/prelazerblack.png");
+
+	Object_add_component(prering, iprering);
+	Object_add_component(prewhite, iprewhite);
+	Object_add_component(preblack, ipreblack);
+
+	Object_add_component(sphinx.head, prering);
+	Object_add_component(sphinx.head, prewhite);
+	Object_add_component(sphinx.head, preblack);
+
+	prering->transform->position.x = -89.5/2-3;
+	prering->transform->position.y = -110.5/2+3;
+	prering->transform->rotation.z = 1;
+	prewhite->transform->position.x = -89.5/2-3;
+	prewhite->transform->position.y = -110.5/2+3;
+	prewhite->transform->rotation.z = 1;
+	preblack->transform->position.x = -89.5/2-3;
+	preblack->transform->position.y = -110.5/2+3;
+	preblack->transform->rotation.z = 1;
+
+	Object_set_invalid(preblack);
+	Object_set_invalid(prewhite);
+	Object_set_invalid(prering);
+
+	////////////////////////////////////// pre lazer0;
+	
+	// 0
+	Animation2D_add_frame(bossPreLazer0);
+	Animation2D_set_frame_length(bossPreLazer0, 0, 0.0);
+	v.x = 0.0;
+	v.y = 0.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &preblack->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &prewhite->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	v.x = 3.0;
+	v.y = 3.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &prering->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	neww = 0;
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &prering->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &prewhite->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 0, &preblack->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// 1
+	Animation2D_add_frame(bossPreLazer0);
+	Animation2D_set_frame_length(bossPreLazer0, 1, 0.2);
+	v.x = 0.0;
+	v.y = 0.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &preblack->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &prewhite->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	v.x = 0.5;
+	v.y = 0.5;
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &prering->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	neww += 20000;
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &prering->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &prewhite->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 1, &preblack->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// 2
+	Animation2D_add_frame(bossPreLazer0);
+	Animation2D_set_frame_length(bossPreLazer0, 2, 0.04);
+	v.x = 0.0;
+	v.y = 0.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &prewhite->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &prering->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	v.x = 0.5;
+	v.y = 0.5;
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &preblack->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	neww += 20000;
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &prering->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &prewhite->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 2, &preblack->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// 3
+	Animation2D_add_frame(bossPreLazer0);
+	Animation2D_set_frame_length(bossPreLazer0, 3, 0.07);
+	v.x = 0.0;
+	v.y = 0.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &prering->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	v.x = 1.0;
+	v.y = 1.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &prewhite->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &preblack->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	neww += 20000;
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &prering->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &prewhite->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 3, &preblack->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	// 5 bye
+	Animation2D_add_frame(bossPreLazer0);
+	Animation2D_set_frame_length(bossPreLazer0, 4, 0);
+	v.x = 0.0;
+	v.y = 0.0;
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &prering->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &prewhite->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &preblack->transform->scale, &v, sizeof(Vector2D), ANIMATION_EASEINOUT_SMOOTHING_FOR_VECTOR2D);
+	neww += 20000;
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &prering->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &prewhite->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+	Animation2D_add_animated_variable(bossPreLazer0, 4, &preblack->transform->rotation.w, &v, sizeof(Vector2D), ANIMATION_LINER_SMOOTHING_FOR_DOUBLE);
+
+	/////////////////////////////////// jaw
 	/////////////////////////////////// jaw
 	// frame 0 init
 	Animation2D_add_frame(bossJaw);
-	Animation2D_set_frame_length(bossJaw, 0, 0.5);
+	Animation2D_set_frame_length(bossJaw, 0, 0.0);
 	neww = 0;
 	Animation2D_add_animated_variable(bossJaw, 0, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
@@ -1250,12 +1473,12 @@ void initSphinx()
 	Animation2D_add_animated_variable(bossJaw, 1, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
 	Animation2D_add_frame(bossJaw);
-	Animation2D_set_frame_length(bossJaw, 2, 2);
+	Animation2D_set_frame_length(bossJaw, 2, 0.4);
 	neww = -40;
 	Animation2D_add_animated_variable(bossJaw, 2, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
 	Animation2D_add_frame(bossJaw);
-	Animation2D_set_frame_length(bossJaw, 3, 2);
+	Animation2D_set_frame_length(bossJaw, 3, 0.5);
 	neww = 0;
 	Animation2D_add_animated_variable(bossJaw, 3, &(sphinx.jaw->transform->rotation.w), &(neww), sizeof(double), ANIMATION_EASEINOUT_SMOOTHING_FOR_DOUBLE);
 
@@ -1557,10 +1780,6 @@ void moveSphinx()
 			sphinxNow = true;	
 			setSphinxColValid();
 		}
-
-		if(hp20 == true)
-		{
-		}	
 		if(hp10 == true)
 		{
 			double cnt;
@@ -1595,15 +1814,24 @@ void moveSphinx()
 		else if(lazer == true)
 		{
 			double cnt;
+			double prelen;
 			double len;
 			Timer_get_count(sphinx.timer, &cnt);
+			Animation2D_get_length(bossPreLazer0, &prelen);
 			Animation2D_get_length(bossHead, &len);
-			if(cnt < len)
+			if(cnt < prelen)
 			{
+				Animation2D_play(bossPreLazer0);
+			}
+			else if(cnt < len+prelen)
+			{
+				Object_set_invalid(preblack);
+				Object_set_invalid(prewhite);
+				Object_set_invalid(prering);
 				Animation2D_play(bossHead);
 				double cnt2;
 				Timer_get_count(sphinx.lazerTimer, &cnt2);
-				if(cnt2 > 0.6) 
+				if(cnt2 > sphinxLazerInterval) 
 				{
 					Timer_reset_count(sphinx.lazerTimer);
 					bool isValid;
@@ -1642,7 +1870,7 @@ void moveSphinx()
 					Vector2D v2;
 					v2.x = 784;
 					v2.y = 196;
-					addEnemyCharacter1(&v2, 10, 16, 18);
+					addEnemyCharacter1(&v2, 10, 16, 16+currentLap);
 					go = false;
 				}
 			}
@@ -1679,7 +1907,7 @@ void moveSphinx()
 			Vector2D_sub(&v, &sphinx.eye->transform->position);
 			sphinx.headp->transform->rotation.w = atan(v.y/v.x)/M_PI*180;
 
-			if(rand()%60 == 0)
+			if(rand()%sphinxShotChance == 0)
 			{
 				Vector2D v2;
 				Vector2D_set(&v2, &sphinx.childObject->transform->position);
@@ -1742,6 +1970,10 @@ void moveSphinx()
 						break;
 					case 1:
 						Animation2D_reset(bossHead);
+						Object_set_valid(preblack);
+						Object_set_valid(prewhite);
+						Object_set_valid(prering);
+						Animation2D_reset(bossPreLazer0);
 						Timer_reset_count(sphinx.timer);
 						lazer = true;
 						break;
@@ -1782,6 +2014,7 @@ void moveSphinx()
 				{
 					Timer_reset_count(sphinx.timer);
 					hp20 = true;
+					incScore(sphinxScore);
 				}
 			}
 		}
@@ -2007,34 +2240,58 @@ void initEnemyCharacter2()
 	Image2D_load(enemyCharacter2.image0, "resource/image/enemy/vehicle/0t.png");
 	Image2D_load(enemyCharacter2.image1, "resource/image/enemy/vehicle/0c.png");
 
+	int h;
+	Image2D_get_height(enemyCharacter2.image1, &h);
+	int w;
+	Image2D_get_width(enemyCharacter2.image1, &w);
+
 	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
 	{
 		enemyCharacter2.object[i] = Object_new();
 		enemyCharacter2.cannonObject[i] = Object_new();
 		enemyCharacter2.tireObject[i] = Object_new();
 		enemyCharacter2.collider[i] = Collider2D_new();
+		enemyCharacter2.collidert[i] = Collider2D_new();
 		enemyCharacter2.timer[i] = Timer_new();
 		enemyCharacter2.speed[i] = ENEMY_CHARACTER2_DEFAULT_SPEED;
 
 		enemyCharacter2.object[i]->transform->position.x = -1000;
 		enemyCharacter2.object[i]->transform->rotation.z = 1;
+		enemyCharacter2.cannonObject[i]->transform->position.x = -3;
+		enemyCharacter2.cannonObject[i]->transform->position.y = -h/2.0/2.0-0.5;
+		enemyCharacter2.cannonObject[i]->transform->scale.x = 1.3;
+
+		enemyCharacter2.tireObject[i]->transform->position.x = -w/2.0;
+		enemyCharacter2.tireObject[i]->transform->position.y = -h/2.0;
 
 		strncpy(enemyCharacter2.collider[i]->tag, "enc2", 4);
 		Collider2D_set_collider_object(enemyCharacter2.collider[i], COLLIDER2D_COLLIDER_RECT);
 		Collider2D_register_collider(enemyCharacter2.collider[i], 24);
 		RectCollider* rc = (RectCollider*)(enemyCharacter2.collider[i]->colObj);
 		Vector2D_set_zero(&(rc->position));
-		rc->size.x = 13;
-		rc->size.y = 25;
+		rc->size.x = 18;
+		rc->size.y = 10;
+		strncpy(enemyCharacter2.collidert[i]->tag, "enc2", 4);
+		Collider2D_set_collider_object(enemyCharacter2.collidert[i], COLLIDER2D_COLLIDER_RECT);
+		Collider2D_register_collider(enemyCharacter2.collidert[i], 24);
+		rc = (RectCollider*)(enemyCharacter2.collidert[i]->colObj);
+		Vector2D_set_zero(&(rc->position));
+		rc->size.x = w;
+		rc->size.y = h;
 		//enemyCharacter2.enemyBullet0[i] = (EnemyBullet0*)malloc(sizeof(EnemyBullet0));
 		//initEnemyBullet0(enemyCharacter2.enemyBullet0[i]);
 		Object_add_component(enemyCharacter2.tireObject[i], enemyCharacter2.image0);
+		Object_add_component(enemyCharacter2.tireObject[i], enemyCharacter2.collidert[i]);
 		Object_add_component(enemyCharacter2.cannonObject[i], enemyCharacter2.image1);
 		Object_add_component(enemyCharacter2.cannonObject[i], enemyCharacter2.collider[i]);
 		Object_add_component(enemyCharacter2.object[i], enemyCharacter2.cannonObject[i]);
 		Object_add_component(enemyCharacter2.object[i], enemyCharacter2.tireObject[i]);
 		//Object_add_component(enemyCharacter2.object[i], enemyCharacter2.enemyBullet0[i]->masterObject);
 		Object_add_component(enemyCharacter2.masterObject, enemyCharacter2.object[i]);
+
+		Object_set_invalid(enemyCharacter2.object[i]);
+		enemyCharacter2.collider[i]->isValid = false;
+		enemyCharacter2.collidert[i]->isValid = false;
 	}
 }
 // }}}
@@ -2043,7 +2300,6 @@ void initEnemyCharacter2()
 // {{{
 void moveEnemyCharacter0()
 {
-	int shotChance = 150;
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
 	{
 			double spf;
@@ -2069,7 +2325,7 @@ void moveEnemyCharacter0()
 				// shot if player is in the front
 				double t;
 				Timer_get_count(enemyCharacter0.timer[i], &t);
-				if(t > enemyCharacter0.interval && rand()%shotChance == 0)
+				if(t > enemyCharacter0.interval && rand()%enc0shotChance == 0)
 				{
 					double diff = playerCharacter.object->transform->position.y - enemyCharacter0.object[i]->transform->position.y;
 					if(diff / ((diff > 0) - (0 > diff)) < 100)
@@ -2082,6 +2338,12 @@ void moveEnemyCharacter0()
 							v.y = rand()/(double)RAND_MAX;
 							Vector2D_normalize(&v);
 							shotEnemyBullet0(&(enemyCharacter0.object[i]->transform->position), &v);
+							if(rand()%20 < currentLap)
+							{
+								v.y = rand()/(double)RAND_MAX;
+								Vector2D_normalize(&v);
+								shotEnemyBullet0(&(enemyCharacter0.object[i]->transform->position), &v);
+							}
 						}
 					}
 				}
@@ -2132,9 +2394,9 @@ void moveEnemyCharacter1()
 			Vector2D_set(&v, &(playerCharacter.object->transform->position));
 			Vector2D_sub(&v, &(enemyCharacter1.object[i]->transform->position));
 			Vector2D_normalize(&v);
-			if(fabs(v.x - cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05 || fabs(v.y - sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05)
+			if((fabs(v.x - cos(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05 || fabs(v.y - sin(enemyCharacter1.object[i]->transform->rotation.w/180.0*M_PI)) > 0.05))
 			{
-				// point to player
+					// point to player
 				if(t > enemyCharacter1.interval*0.4)
 				{
 			       		enemyCharacter1.object[i]->transform->rotation.w += 6;
@@ -2149,13 +2411,16 @@ void moveEnemyCharacter1()
 				// shot if player is in the front
 				if(t > enemyCharacter1.interval)
 				{
-					if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
+					if(rand()%enc1shotChance == 0)
 					{
-						Timer_reset_count(enemyCharacter1.timer[i]);
-						Vector2D v2;
-						Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
-						v2.y += 10;
-						shotEnemyBullet0(&v2, &v);
+						if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
+						{
+							Timer_reset_count(enemyCharacter1.timer[i]);
+							Vector2D v2;
+							Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
+							v2.y += 10;
+							shotEnemyBullet0(&v2, &v);
+						}
 					}
 				}
 			}
@@ -2174,21 +2439,26 @@ void moveEnemyCharacter1()
 
 void moveEnemyCharacter2()
 {
-	int shotChance = 150;
 	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
 	{
+		Object* pbo = enemyCharacter2.object[i];
+		bool isValid;
+		Object_is_valid(pbo, &isValid);
+		if(isValid == true)
+		{
 			double spf;
 			bool isTerrain = false;
 			Timer_get_spf(enemyCharacter2.timer[i], &spf);
-			Object* pbo = enemyCharacter2.object[i];
 			if(enemyCharacter2.collider[i]->hits[0] != NULL)
 			{
 				for(int ci = 0; ci < COLLIDER2D_HITS_NUM; ci++)
 				{
-					if(strncmp(enemyCharacter2.collider[i]->hits[ci]->tag, "trrn", 4) == 0)
+					if(enemyCharacter2.collider[i]->hits[ci] != NULL)
 					{
-						enemyCharacter2.speed[i] *= -1;
-						isTerrain = true;
+						if(strncmp(enemyCharacter2.collider[i]->hits[ci]->tag, "trrn", 4) == 0)
+						{
+							isTerrain = true;
+						}
 					}
 				}
 				if(isTerrain == false)
@@ -2196,35 +2466,52 @@ void moveEnemyCharacter2()
 					DPIF(false, "%p is destroyed by %p\n", enemyCharacter2.collider[i], enemyCharacter2.collider[i]->hits[0]);
 					Object_set_invalid(pbo);
 					enemyCharacter2.collider[i]->isValid = false;
+					Vector2D v;
+					v.x = pbo->transform->position.x ;
+					v.y = pbo->transform->position.y;
+					addDestroyEffect(&v);
 				}
 			}
-			bool isValid;
-			Object_is_valid(pbo, &isValid);
 
-			enemyCharacter1.object[i]->transform->position.x += spf * enemyCharacter1.speed;
-
-			if(isValid == true)
-			{
-				// shot randomly
+				pbo->transform->position.x -= spf * stage0_moving_speed;
+				enemyCharacter2.object[i]->transform->rotation.w += spf*enemyCharacter2.speed[i];
+				// shoot randomly
 				double t;
 				Timer_get_count(enemyCharacter2.timer[i], &t);
-				if(t > enemyCharacter2.interval && rand()%shotChance == 0)
+				if(t > enemyCharacter2.interval && rand()%enc2shotChance == 0)
 				{
-					Timer_reset_count(enemyCharacter2.timer[i]);
-					Vector2D v;
-					v.x = cos(enemyCharacter2.cannonObject[i]->transform->rotation.w/180.0*M_PI);
-					v.y = sin(enemyCharacter2.cannonObject[i]->transform->rotation.w/180.0*M_PI);
-					Vector2D_normalize(&v);
-					shotEnemyBullet0(&(enemyCharacter2.cannonObject[i]->transform->position), &v);
+					if(WINDOW_WIDTH > pbo->transform->position.x && pbo->transform->position.y > 0 && view->window_height+50 > pbo->transform->position.y && pbo->transform->position.x > -50)
+					{
+						Timer_reset_count(enemyCharacter2.timer[i]);
+						Vector2D v;
+						Vector2D v2;
+						v.x = cos(enemyCharacter2.object[i]->transform->rotation.w/180.0*M_PI);
+						v.y = sin(enemyCharacter2.object[i]->transform->rotation.w/180.0*M_PI);
+						Vector2D_normalize(&v);
+						Vector2D_set(&v2, &enemyCharacter2.object[i]->transform->position);
+						Vector2D_add(&v2, &enemyCharacter2.tireObject[i]->transform->position);
+						shotEnemyBullet0(&(enemyCharacter2.object[i]->transform->position), &v);
+						for(int a = 0; a < 10; a++)
+						{
+							if(rand()%(30+a) < currentLap)
+							{
+								v.x += rand()/(double)RAND_MAX - 0.5;
+								v.y += rand()/(double)RAND_MAX - 0.5;
+								Vector2D_normalize(&v);
+								shotEnemyBullet0(&(enemyCharacter2.object[i]->transform->position), &v);
+							}
+						}
+					}
 				}
-			}
-		if(pbo->transform->position.x < -50)
-		{
-			Object_set_invalid(pbo);
-			enemyCharacter2.collider[i]->isValid = false;
-			//pbo->transform->position.x = view->window_width;
-			//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
+		
+			if(pbo->transform->position.x < -100 || (pbo->transform->position.x < WINDOW_WIDTH &&(view->window_width < pbo->transform->position.x || pbo->transform->position.y < 0 || view->window_height+8 < pbo->transform->position.y)))
+			{
+				Object_set_invalid(pbo);
+				enemyCharacter2.collider[i]->isValid = false;
+				//pbo->transform->position.x = view->window_width;
+				//pbo->transform->position.y = playerCharacter.object->transform->position.y + 8;
 
+			}
 		}
 	}
 }
@@ -2272,10 +2559,15 @@ void moveEnemyBullet0()
 }
 // }}}
 
-// add enc 0 1
+// add enc 0 1 2
 // {{{
-void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
+void addEnemyCharacter0(Vector2D* const pos, const int start, const int e)
 {
+	int end = e;
+	if(end >= ENEMY_CHARACTER0_DEFAULT_NUM)
+	{
+		end = ENEMY_CHARACTER0_DEFAULT_NUM-1;
+	}
 	for(int i = start; i < end; i++)
 	{
 		bool isValid;
@@ -2296,8 +2588,13 @@ void addEnemyCharacter0(Vector2D* const pos, const int start, const int end)
 		}
 	}
 }
-void addEnemyCharacter1(Vector2D* const pos, const double offset, const int start, const int end)
+void addEnemyCharacter1(Vector2D* const pos, const double offset, const int start, const int e)
 {
+	int end = e;
+	if(end >= ENEMY_CHARACTER1_DEFAULT_NUM)
+	{
+		end = ENEMY_CHARACTER1_DEFAULT_NUM-1;
+	}
 	for(int i = start; i < end; i++)
 	{
 		bool isValid;
@@ -2315,6 +2612,29 @@ void addEnemyCharacter1(Vector2D* const pos, const double offset, const int star
 		else
 		{
 			DEIF(true, "couldnt add an enemy1 %d\n", i);
+			//break;
+		}
+	}
+}
+
+void addEnemyCharacter2(Vector2D* const pos)
+{
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
+	{
+		bool isValid;
+		Object_is_valid(enemyCharacter2.object[i], &isValid);
+		if(isValid == false)
+		{
+			DPIF(false, "i:%d\n", i);
+			Object_set_valid(enemyCharacter2.object[i]);
+			enemyCharacter2.collider[i]->isValid = true;
+			Vector2D_set(&(enemyCharacter2.object[i]->transform->position), pos);
+			Timer_set_count(enemyCharacter2.timer[i], enemyCharacter2.interval);
+			break;
+		}
+		else
+		{
+			DEIF(true, "couldnt add an enemy2 %d\n", i);
 			//break;
 		}
 	}
@@ -2370,6 +2690,7 @@ void updateTimer()
 	Timer_count(enemyBullet0.masterTimer);
 
 	Timer_count(enemyCharacter1.masterTimer);
+	Timer_count(enemyCharacter2.masterTimer);
 
 	Timer_count(powerupCore.masterTimer);
 	Timer_count(destroyEffect0.masterTimer);
@@ -2387,6 +2708,11 @@ void updateTimer()
 	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
 	{
 		Timer_count(enemyCharacter1.timer[i]);
+	}
+
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
+	{
+		Timer_count(enemyCharacter2.timer[i]);
 	}
 
 	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
@@ -2432,7 +2758,7 @@ void initPowerupCore()
 		eb->imageObject[i]->transform->scale.y = 0.5;
 
 
-		strncpy(pbc->tag, "pwcr", COLLIDER2D_TAG_LENGTH);
+		strncpy(pbc->tag, "pucr", COLLIDER2D_TAG_LENGTH);
 		Collider2D_set_collider_object(pbc, COLLIDER2D_COLLIDER_RECT );
 		Collider2D_register_collider(pbc, 23);
 		rc = (RectCollider*)(pbc->colObj);
@@ -2449,7 +2775,7 @@ void initPowerupCore()
 	}
 }
 
-void addPowerupCore(Vector2D* const pos, const char tag[COLLIDER2D_TAG_LENGTH])
+void addPowerupCore(Vector2D* const pos)
 {
 	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
 	{
@@ -2460,7 +2786,6 @@ void addPowerupCore(Vector2D* const pos, const char tag[COLLIDER2D_TAG_LENGTH])
 			DPIF(false, "i:%d\n", i);
 			Object_set_valid(powerupCore.object[i]);
 			powerupCore.collider[i]->isValid = true;
-			strncpy(powerupCore.collider[i]->tag, tag, COLLIDER2D_TAG_LENGTH);
 			Vector2D_set(&(powerupCore.object[i]->transform->position), pos);
 			return;
 		}
@@ -2623,10 +2948,19 @@ void updateScoreObj()
 	
 	static Image2D* inum[10];
 	static Image2D* iscore;
+
+	static Image2D* idouble;
+	static Image2D* ibulspeed;
+	static Image2D* ibulnum;
+	static Image2D* ispeed;
+	static Image2D* iselecter;
+
 	static bool isInitialized = false;
 
 	static Object* digiObj[SCORE_STRING_LENGTH];
 	static Object* scoreObjChild;
+	static Object* powerupObj;
+	static Object* selecterObj;
 
 	if(isInitialized == false)
 	{
@@ -2635,6 +2969,8 @@ void updateScoreObj()
 
 		scoreObject = Object_new();
 		scoreObjChild = Object_new();
+		powerupObj = Object_new();
+		selecterObj = Object_new();
 
 		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
 		{
@@ -2651,9 +2987,61 @@ void updateScoreObj()
 			Object_add_component(digiObj[i], inum[i]);
 		}
 
+
 		iscore = Image2D_new();
+		idouble = Image2D_new();
+		ibulnum = Image2D_new();
+		ibulspeed = Image2D_new();
+		ispeed = Image2D_new();
+		iselecter = Image2D_new();
+
+		ibulnum = Image2D_new();
+		ibulspeed = Image2D_new();
+		ispeed = Image2D_new();
+		iselecter = Image2D_new();
+
+		// speed bspeed bnum double
+		idouble->p_transform->scale.x = 0.4;
+		idouble->p_transform->scale.y = 0.4;
+		idouble->p_transform->position.x = 60*3;
+		idouble->p_transform->position.y = WINDOW_HEIGHT-60;
+
+		ibulnum->p_transform->scale.x = 0.4;
+		ibulnum->p_transform->scale.y = 0.4;
+		ibulnum->p_transform->position.x = 60*2;
+		ibulnum->p_transform->position.y = WINDOW_HEIGHT-60;
+
+		ibulspeed->p_transform->scale.x = 0.4;
+		ibulspeed->p_transform->scale.y = 0.4;
+		ibulspeed->p_transform->position.x = 60*1;
+		ibulspeed->p_transform->position.y = WINDOW_HEIGHT-60;
+
+		ispeed->p_transform->scale.x = 0.4;
+		ispeed->p_transform->scale.y = 0.4;
+		ispeed->p_transform->position.x = 60*0;
+		ispeed->p_transform->position.y = WINDOW_HEIGHT-60;
+
+		iselecter->p_transform->scale.x = 0.4;
+		iselecter->p_transform->scale.y = 0.4;
+		iselecter->p_transform->position.x = -60.0;
+		iselecter->p_transform->position.y = WINDOW_HEIGHT-60;
+
 		iscore->p_transform->position.y = 6;
+
 		Image2D_load(iscore, "resource/image/text/score.png");
+		Image2D_load(idouble, "resource/image/text/double.png");
+		Image2D_load(ibulspeed, "resource/image/text/shotspeed.png");
+		Image2D_load(ibulnum, "resource/image/text/shotnum.png");
+		Image2D_load(ispeed, "resource/image/text/speed.png");
+		Image2D_load(iselecter, "resource/image/text/selecter.png");
+
+		Object_add_component(powerupObj, idouble);
+		Object_add_component(powerupObj, ibulspeed);
+		Object_add_component(powerupObj, ibulnum);
+		Object_add_component(powerupObj, ispeed);
+		Object_add_component(powerupObj, selecterObj);
+		Object_add_component(selecterObj, iselecter);
+		Object_add_component(scoreObject, powerupObj);
 
 		Object_add_component(scoreObjChild, iscore);
 		Object_add_component(scoreObject, scoreObjChild);
@@ -2672,11 +3060,13 @@ void updateScoreObj()
 		Object_add_component(digiObj[SCORE_STRING_LENGTH-1-i], inum[(score%dd - score%d)/d]);
 	}
 
+	selecterObj->transform->position.x = powerupSelecter*60;
+
 }
 
 void incScore(unsigned long long scr)
 {
-	score += scr * currentLap;
+	score += scr * (currentLap * currentLap)/2.0 * playerCharacter.hp/PLAYER_CHARACTER_DEFAULT_HP;
 }
 // }}}
 
@@ -2793,7 +3183,12 @@ Animation2D* wave4childAnimation;
 Animation2D* wave4animation;
 
 Object* pyramidObj0;
+Object* pyramidObj1;
+Object* pyramidObj2;
+Object* pyramidObj3;
+Object* pyramidObj4;
 Object* groundObj0;
+
 double stage0ground0length;
 double stage0ground0time = 60;
 
@@ -2802,13 +3197,26 @@ void stage0_init()
 	Image2D* pyramidImg;
 	Image2D* groundImg;
 	Collider2D* pyramidCol;
+	Collider2D* pyramidCol1;
+	Collider2D* pyramidCol2;
+	Collider2D* pyramidCol3;
+	Collider2D* pyramidCol4;
 	Collider2D* groundCol;
 
         pyramidObj0 = Object_new();
+        pyramidObj1 = Object_new();
+        pyramidObj2 = Object_new();
+        pyramidObj3 = Object_new();
+        pyramidObj4 = Object_new();
+
 	groundObj0 = Object_new();
 	pyramidImg = Image2D_new();
 	groundImg = Image2D_new();
 	pyramidCol = Collider2D_new();
+	pyramidCol1 = Collider2D_new();
+	pyramidCol2 = Collider2D_new();
+	pyramidCol3 = Collider2D_new();
+	pyramidCol4 = Collider2D_new();
 	groundCol= Collider2D_new();
 
 	stage0 = Object_new();
@@ -2817,10 +3225,26 @@ void stage0_init()
 	Object_add_component(pyramidObj0, pyramidImg);
 	Object_add_component(pyramidObj0, pyramidCol);
 
+	Object_add_component(pyramidObj1, pyramidImg);
+	Object_add_component(pyramidObj1, pyramidCol1);
+
+	Object_add_component(pyramidObj2, pyramidImg);
+	Object_add_component(pyramidObj2, pyramidCol2);
+
+	Object_add_component(pyramidObj3, pyramidImg);
+	Object_add_component(pyramidObj3, pyramidCol3);
+
+	Object_add_component(pyramidObj4, pyramidImg);
+	Object_add_component(pyramidObj4, pyramidCol4);
+
 	Object_add_component(groundObj0, groundImg);
 	Object_add_component(groundObj0, groundCol);
 
 	Object_add_component(stage0, pyramidObj0);
+	Object_add_component(stage0, pyramidObj1);
+	Object_add_component(stage0, pyramidObj2);
+	Object_add_component(stage0, pyramidObj3);
+	Object_add_component(stage0, pyramidObj4);
 	Object_add_component(stage0, groundObj0);
 
 	Image2D_load(groundImg, "resource/image/stage/stage0/ground.png");
@@ -2828,12 +3252,24 @@ void stage0_init()
 
 	Collider2D_set_collider_object(groundCol, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(pyramidCol, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(pyramidCol1, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(pyramidCol2, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(pyramidCol3, COLLIDER2D_COLLIDER_RECT);
+	Collider2D_set_collider_object(pyramidCol4, COLLIDER2D_COLLIDER_RECT);
 
 	RectCollider* grc = (RectCollider*)(groundCol->colObj);
 	RectCollider* prc = (RectCollider*)(pyramidCol->colObj);
+	RectCollider* prc1 = (RectCollider*)(pyramidCol1->colObj);
+	RectCollider* prc2 = (RectCollider*)(pyramidCol2->colObj);
+	RectCollider* prc3 = (RectCollider*)(pyramidCol3->colObj);
+	RectCollider* prc4 = (RectCollider*)(pyramidCol4->colObj);
 
 	Vector2D_set_zero(&(grc->position));
 	Vector2D_set_zero(&(prc->position));
+	Vector2D_set_zero(&(prc1->position));
+	Vector2D_set_zero(&(prc2->position));
+	Vector2D_set_zero(&(prc3->position));
+	Vector2D_set_zero(&(prc4->position));
 
 	grc->size.x = 60;
 	grc->size.y = 60;
@@ -2841,13 +3277,24 @@ void stage0_init()
 	prc->size.x = 60;
 	prc->size.y = 60;
 
+	prc1->size.x = 60;
+	prc1->size.y = 60;
+
+	prc2->size.x = 60;
+	prc2->size.y = 60;
+
+	prc3->size.x = 60;
+	prc3->size.y = 60;
+
+	prc4->size.x = 60;
+	prc4->size.y = 60;
+
 	int w;
 	stage0ground0Offset = 5000;
 	stage0ground0length = stage0_moving_speed * stage0ground0time;
 	Image2D_get_width(groundImg, &w);
 
 	groundObj0->transform->position.x = stage0ground0Offset;
-	DPIF(true, "ground obj 0 x : %f\n",groundObj0->transform->position.x);
 	groundObj0->transform->position.y = WINDOW_HEIGHT-50;
 	groundObj0->transform->scale.x = stage0ground0length/ (double)w;
 	groundObj0->transform->scale.y = 10;
@@ -2859,8 +3306,47 @@ void stage0_init()
 	pyramidObj0->transform->rotation.z = 1;
 	pyramidObj0->transform->rotation.w = 45;
 
-	Collider2D_register_collider(groundCol, 20);
+	pyramidObj1->transform->scale.x = 3;
+	pyramidObj1->transform->scale.y = 3;
+	pyramidObj1->transform->position.x =6200;
+	pyramidObj1->transform->position.y = WINDOW_HEIGHT-50-30*sqrt(pow(pyramidObj1->transform->scale.x,2) + pow(pyramidObj1->transform->scale.y,2));
+	pyramidObj1->transform->rotation.z = 1;
+	pyramidObj1->transform->rotation.w = 45;
+
+	pyramidObj2->transform->scale.x = 13;
+	pyramidObj2->transform->scale.y = 13;
+	pyramidObj2->transform->position.x =7200;
+	pyramidObj2->transform->position.y = WINDOW_HEIGHT-50-30*sqrt(pow(pyramidObj2->transform->scale.x,2) + pow(pyramidObj2->transform->scale.y,2));
+	pyramidObj2->transform->rotation.z = 1;
+	pyramidObj2->transform->rotation.w = 45;
+
+	pyramidObj3->transform->scale.x = 6;
+	pyramidObj3->transform->scale.y = 6;
+	pyramidObj3->transform->position.x =7600;
+	pyramidObj3->transform->position.y = WINDOW_HEIGHT-50-30*sqrt(pow(pyramidObj3->transform->scale.x,2) + pow(pyramidObj3->transform->scale.y,2));
+	pyramidObj3->transform->rotation.z = 1;
+	pyramidObj3->transform->rotation.w = 45;
+
+	pyramidObj4->transform->scale.x = 9;
+	pyramidObj4->transform->scale.y = 9;
+	pyramidObj4->transform->position.x =9000;
+	pyramidObj4->transform->position.y = WINDOW_HEIGHT-50-30*sqrt(pow(pyramidObj4->transform->scale.x,2) + pow(pyramidObj4->transform->scale.y,2));
+	pyramidObj4->transform->rotation.z = 1;
+	pyramidObj4->transform->rotation.w = 45;
+
+	pyramidObj0->transform->rotation.z = 1;
+	pyramidObj0->transform->rotation.w = 45;
+
+
+
+
+
 	Collider2D_register_collider(pyramidCol, 20);
+	Collider2D_register_collider(pyramidCol1, 20);
+	Collider2D_register_collider(pyramidCol2, 20);
+	Collider2D_register_collider(pyramidCol3, 20);
+	Collider2D_register_collider(pyramidCol4, 20);
+	Collider2D_register_collider(groundCol, 20);
 
 
 	stage0Timer = Timer_new();
@@ -2982,12 +3468,21 @@ void stage0_update()
 	const double enemyWave4length = 12.0;
 	static bool enemyWave4 = false;
 
+	const double enemyFixed0start= 43.6;
+	const double enemyFixed0length = 25.0;
+	static bool enemyFixed0 = false;
+
+	const double enemyFollow3start = 55.5;
+	const double enemyFollow3length = 10.0;
+	static bool enemyFollow3 = false;
 
 	Vector2D v;
 	v.x = WINDOW_WIDTH + 200;
 	v.y = WINDOW_HEIGHT / 2;
-	if(Keyboard_is_pressed('u'))
-		addPowerupCore(&v, POWERUPCORE_SPEEDUP_TAG);
+
+	if(Keyboard_is_pressed('h'))
+		addPowerupCore(&v);
+
 
 	if(enemyWave0 == true){Animation2D_play(wave0childAnimation);
 			       Animation2D_play(wave0animation);}
@@ -3003,6 +3498,7 @@ void stage0_update()
 
 	if(enemyWave4 == true){Animation2D_play(wave4childAnimation);
 			       Animation2D_play(wave4animation);}
+
 
 	// wave 0 
 	if(enemyWave0 == false && st > enemyWave0start && st < enemyWave0start + enemyWave0length) {addEnemyCharacter0(&v, 0, 6); enemyWave0 = true;}		
@@ -3051,8 +3547,14 @@ void stage0_update()
 	if(st > enemyWave4start + enemyWave4length){enemyWave4 = false;Animation2D_reset(wave4animation);Animation2D_reset(wave4childAnimation);}
 
 
+	// fixed 0
+	if(enemyFixed0 == false && st > enemyFixed0start && st < enemyFixed0start + enemyFixed0length) {for(int x = 0; x < 5; x++){for(int i = 0; i < currentLap; i++){v.y = (double)i/currentLap*(WINDOW_HEIGHT-100) +100;addEnemyCharacter2(&v);} v.x = WINDOW_WIDTH + 100 + x*100;} enemyFixed0 = true;}		
+	if(st > enemyFixed0start + enemyFixed0length){enemyFixed0 = false;}
 
-
+	// follow 3
+	v.y = WINDOW_HEIGHT - 100;
+	if(enemyFollow3 == false && st > enemyFollow3start && st < enemyFollow3start + enemyFollow3length) {addEnemyCharacter1(&v, -50, 0, 5+currentLap*2); enemyFollow3 = true;}		
+	if(st > enemyFollow3start + enemyFollow3length){enemyFollow3 = false;}
 
 
 
@@ -3072,14 +3574,35 @@ void stage0_update()
 	Object_set_invalid(stage0);
 	Timer_reset_count(stage0Timer);
 	stage0->transform->position.x = 0;
-	sphinx.childObject->transform->position.x = 850 + stage0_moving_speed * timeSphinxApper; // 60s
+	sphinx.childObject->transform->position.x = WINDOW_WIDTH + stage0_moving_speed * timeSphinxApper; // 60s
 	Animation2D_play(bossReset);
 	Animation2D_reset(bossStandUpAnim);
 	Object_set_valid(sphinx.masterObject);
 
+	enc0shotChance *= 0.75;
+	enc1shotChance *= 0.83;
+	enc2shotChance *= 0.92;
+
+	enemyCharacter0.interval *= 0.76;
+	enemyCharacter1.interval *= 0.9;
+	enemyCharacter2.interval *= 0.82;
+
+	enemyCharacter1.speed *= 1.3;
 
 	sphinx.hp2 = SPHINX_DEFAULT_HP2;
 	sphinx.hp1 = SPHINX_DEFAULT_HP1;
+
+	sphinxShotChance *= 0.84;
+	sphinxLazerInterval *= 0.91;
+
+	enemyBullet0.speed *= 1.15;
+
+
+	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
+	{
+		enemyBullet0.object[i]->transform->scale.x *= 1.19;
+		enemyBullet0.object[i]->transform->scale.y *= 1.19;
+	}
 
 	currentLap++;
 
@@ -3193,3 +3716,4 @@ void setStageAnimation(Animation2D* const anm, const int fnum, Object** const ob
 
 // }}}
 
+// vim:set foldmethod=marker:

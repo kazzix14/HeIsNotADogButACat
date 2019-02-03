@@ -19,7 +19,7 @@ typedef struct audio
 	struct private_variables* pv;	
 } Audio;
 
-Audio* Audio_new(const unsigned char);
+Audio* Audio_new(const unsigned int);
 void Audio_release(Audio* const);
 void Audio_load(Audio* const, char* cosnt);
 void Audio_play(Audio* const);

@@ -25,7 +25,7 @@ struct private_variables
 {
 	ALuint *buf,
 	       *src;
-	unsigned char buf_size;
+	unsigned int buf_size;
 };
 
 static char is_initialized = 0;
@@ -36,7 +36,7 @@ pthread_mutex_t mutex_cond_audio_play;
 Audio* var_audio_load;
 Audio* var_audio_play;
 
-Audio* Audio_new(const unsigned char buf_size)
+Audio* Audio_new(const unsigned int buf_size)
 {
 	pthread_t pthread_id;
 	if(!is_initialized)

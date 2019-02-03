@@ -14,6 +14,7 @@
 #define IMAGE2D_TYPE_ID 15195
 #define IMAGE2D_TOP_LEFT 1
 #define IMAGE2D_CENTER 2
+#define IMAGE2D_CENTER_LEFT 3
 
 #include <GL/glut.h>
 #include <GL/glpng.h>
