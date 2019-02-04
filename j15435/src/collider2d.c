@@ -48,6 +48,10 @@ Collider2D* Collider2D_new()
 	if(initialilzed == false)
 	{
 		cols = (Collider2D***)malloc(sizeof(Collider2D**)*COLLIDER2D_LAYER_NUM);
+		for(int i = 0; i < COLLIDER2D_LAYER_NUM; i++)
+		{
+			cols[i] = (Collider2D**)malloc(sizeof(Collider2D*));
+		}
 		colNum = (unsigned int*)malloc(sizeof(unsigned int)*COLLIDER2D_LAYER_NUM);
 		initialilzed = true;
 	}
