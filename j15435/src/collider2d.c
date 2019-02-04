@@ -403,6 +403,10 @@ static void addHits(Collider2D* const this, Collider2D* const hit)
 
 static void resetHits(Collider2D* const this)
 {
+	if(this == NULL)
+	{
+		DPIF(false, "this is NULL");
+	}
 	for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
 	{
 		this->hits[i] = NULL;
