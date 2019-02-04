@@ -2955,12 +2955,16 @@ void updateScoreObj()
 	static Image2D* ispeed;
 	static Image2D* iselecter;
 
+	static Image2D* ihpframe;
+	static Image2D* ihpbar;
+
 	static bool isInitialized = false;
 
 	static Object* digiObj[SCORE_STRING_LENGTH];
 	static Object* scoreObjChild;
 	static Object* powerupObj;
 	static Object* selecterObj;
+	static Object* hpObj;
 
 	if(isInitialized == false)
 	{
@@ -2971,6 +2975,7 @@ void updateScoreObj()
 		scoreObjChild = Object_new();
 		powerupObj = Object_new();
 		selecterObj = Object_new();
+		hpObj = Object_new();
 
 		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
 		{
@@ -2994,6 +2999,9 @@ void updateScoreObj()
 		ibulspeed = Image2D_new();
 		ispeed = Image2D_new();
 		iselecter = Image2D_new();
+
+		ihpframe = Image2D_new();
+		ihpbar = Image2D_new();
 
 		ibulnum = Image2D_new();
 		ibulspeed = Image2D_new();
@@ -3035,12 +3043,18 @@ void updateScoreObj()
 		Image2D_load(ispeed, "resource/image/text/speed.png");
 		Image2D_load(iselecter, "resource/image/text/selecter.png");
 
+		Image2D_load(ihpframe, "resource/image/text/hpframe.png");
+		Image2D_load(ihpbar, "resource/image/text/hpbar.png");
+
 		Object_add_component(powerupObj, idouble);
 		Object_add_component(powerupObj, ibulspeed);
 		Object_add_component(powerupObj, ibulnum);
 		Object_add_component(powerupObj, ispeed);
 		Object_add_component(powerupObj, selecterObj);
+		Object_add_component(hpObj, ihpframe);
+		Object_add_component(hpObj, ihpbar);
 		Object_add_component(selecterObj, iselecter);
+		Object_add_component(scoreObject, hpObj);
 		Object_add_component(scoreObject, powerupObj);
 
 		Object_add_component(scoreObjChild, iscore);
@@ -3048,6 +3062,11 @@ void updateScoreObj()
 
 		scoreObjChild->transform->scale.x = 0.5;
 		scoreObjChild->transform->scale.y = 0.5;
+
+		hpObj->transform->scale.x = 5;
+		hpObj->transform->scale.y = 3;
+		hpObj->transform->position.x = 5;
+		hpObj->transform->position.y = 30;
 	}
 
 	int d;
