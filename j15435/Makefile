@@ -17,6 +17,7 @@ DEPENDS    := $(subst $(SRCDIR)/, $(DEPENDDIR)/, $(SRCS:%.c=%.d))
 ICONSRC    := $(ICONDIR)/icon.rc
 ICONIMG    := $(ICONIMGDIR)/icon.ico
 ICONOBJ    := $(ICONSRC:%.rc=%.o)
+ifeq ($(OS),Windows_NT))
 LIBS 	   :=	glpng		\
 		glut32		\
 		glu32		\
@@ -24,13 +25,23 @@ LIBS 	   :=	glpng		\
 		soft_oal	\
 		alut		\
 		m		  
+else
+LIBS 	   :=	glpng		\
+		glut		\
+		GLU		\
+		GL		\
+		OpenGL		\
+		openal		\
+		alut		\
+		pthread		\
+		m		  
+endif
 
 CCFLAGS    := -Wall       \
 		 -pthread\
 	     $(addprefix -I, $(INCDIR)) 
 
-LDFLAGS    := $(addprefix -l, $(LIBS))	\
-	      -L.
+LDFLAGS    := -L. $(addprefix -l, $(LIBS))
 
 DEBUG_FLAGS   := -g3 -pg -O0 -DDEBUG
 RELEASE_FLAGS := -O2 -s
@@ -52,8 +63,13 @@ release: all
 all: $(TARGET)
 
 $(TARGET):: $(DEPENDS)
+ifeq ($(OS),Windows_NT)
 $(TARGET):: $(OBJS) $(ICONOBJ)
 	$(LINK)
+else
+$(TARGET):: $(OBJS)
+	$(LINK)
+endif
 
 $(OBJDIR)/%.o:
 	-@mkdir -p $(OBJDIR)
