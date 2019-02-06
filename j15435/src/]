@@ -45,7 +45,6 @@
 #define PLAYER_CHARACTER_DEFAULT_HP 100
 #define PLAYER_CHARACTER_BULLET_DEFAULT_SPEED 800
 #define PLAYER_CHARACTER_BULLET_LIMIT_SPEED 1600
-#define PLAYER_CHARACTER_BULLET_LIMIT_SCALE 5.3
 #define PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL 0.01
 #define PLAYER_CHARACTER_DEFAULT_BULLET_NUM 1
 #define PLAYER_CHARACTER_BULLET_NUM_LIMIT 64
@@ -70,15 +69,14 @@
 #define POWERUPCORE_DEFAULT_NUM 16
 #define POWERUPCORE_DEFAULT_SPEED 100
 #define POWERUPCORE_OBTAIN_SPEED 30
-#define POWERUPCORE_BULLETSCALE 1.54
 #define POWERUPCORE_OBTAIN_BULLETSPEED 200
 #define POWERUPCORE_SPEEDUP_TAG "pusp"
 #define POWERUPCORE_BULLETSPEEDUP_TAG "pubs"
 #define POWERUPCORE_BULLETNUMINCREASE_TAG "pubn"
 
-#define BACKGROUND1_SPEED 10
-#define BACKGROUND2_SPEED 20
-#define BACKGROUND3_SPEED 30
+#define BACKGROUND1_SPEED 20
+#define BACKGROUND2_SPEED 40
+#define BACKGROUND3_SPEED 70
 
 #define DESTROY_EFFECT_FADETIME 0.15
 #define DESTROY_EFFECT_NUM 64
@@ -87,14 +85,6 @@
 #define SPHINX_DEFAULT_HP2 127
 
 #define SCORE_STRING_LENGTH 21
-
-#define DAMAGE_TERRAIN_BASE 84
-#define DAMAGE_ENEMY_CHARACTER0_BASE 71
-#define DAMAGE_ENEMY_CHARACTER1_BASE 61
-#define DAMAGE_ENEMY_CHARACTER2_BASE 53
-#define DAMAGE_ENEMY_BULLET0_BASE 11
-#define DAMAGE_SPHINX_BASE 14
-#define DAMAGE_SPHINX_LAZER_BASE 13
 
 typedef struct playerbullet0 PlayerBullet0;
 typedef struct enemybullet0 EnemyBullet0;
@@ -344,10 +334,6 @@ View* view;
 double totaltime = 0;
 
 
-Object* dfxObj;
-Image2D* damageEffect;
-
-
 PlayerCharacter playerCharacter;
 PlayerBullet0 playerBullet0;
 long long numDestroy = 0;
@@ -478,8 +464,6 @@ void timer(int value)
 
 	updateTimer();
 
-	updateScoreObj();
-
 	moveBackground();
 
 	stage0_update();
@@ -494,6 +478,7 @@ void timer(int value)
 	moveDestroyEffect();
 	moveSphinx();
 
+	updateScoreObj();
 
 	fps();
 }
@@ -714,7 +699,7 @@ void initPlayerBullet0()
 		rc = (RectCollider*)(pbc->colObj);
 		Vector2D_set_zero(&(rc->position));
 		rc->size.x = 20;
-		rc->size.y = 8;
+		rc->size.y = 4;
 		pbo->transform->scale.y = 0.5;
 
 		Object_add_component(pbo, playerBullet0.image0);
@@ -748,43 +733,23 @@ void movePlayerCharacter()
 					powerupSelecter = 0;
 				}
 				break;
-			case 3://bscale
-				if(playerBullet0.object[0]->transform->scale.x < PLAYER_CHARACTER_BULLET_LIMIT_SCALE)
-				{
-					for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM_LIMIT; i++)
-					{
-						playerBullet0.object[i]->transform->scale.x *= POWERUPCORE_BULLETSCALE;
-						playerBullet0.object[i]->transform->scale.y *= POWERUPCORE_BULLETSCALE;
-						powerupSelecter = 0;
-					}
-				}
-				break;
-			case 4://bdouble
-				if(pbDouble < PLAYER_CHARACTER_LIMIT_DOUBLE)
-				{
-					pbDouble++;
-					powerupSelecter = 0;
-				}
-				break;
-			case 5:// bnum
+			case 3://bnum
 				if(playerBullet0.bulletNum < PLAYER_CHARACTER_BULLET_NUM_LIMIT)
 				{
 					playerBullet0.bulletNum++;
 					powerupSelecter = 0;
 				}
 				break;
-
+			case 4://double
+				if(pbDouble < PLAYER_CHARACTER_LIMIT_DOUBLE)
+				{
+					pbDouble++;
+					powerupSelecter = 0;
+				}
+				break;
 		}
 
 	}
-	
-	DDO(
-			Vector2D v;
-			v.x = 1000;
-			v.y = 500;
-		if(Keyboard_is_pressed('n'))
-			addPowerupCore(&v);
-	   )
 
 	if(Keyboard_is_down('a') || Keyboard_is_down('k'))
 	{
@@ -923,46 +888,15 @@ void movePlayerCharacter()
 				
 			}
 			*/
-			powerupSelecter = ( powerupSelecter + 1 ) % 6;
+			powerupSelecter = ( powerupSelecter + 1 ) % 5;
 
 		}
 		if(damage == true)
 		{
-			Object_set_valid(dfxObj);
 			for(int i = 0; i < tagnum; i++)
 			{
-				if(strncmp(tag[i], "enc0", COLLIDER2D_TAG_LENGTH) == 0)
-				{
-					playerCharacter.hp -= DAMAGE_ENEMY_CHARACTER0_BASE * currentLap;
-				}
-				else if(strncmp(tag[i], "enc1", COLLIDER2D_TAG_LENGTH) == 0)
-				{
-					playerCharacter.hp -= DAMAGE_ENEMY_CHARACTER1_BASE * currentLap;
-				}
-				else if(strncmp(tag[i], "enc2", COLLIDER2D_TAG_LENGTH) == 0)
-				{
-					playerCharacter.hp -= DAMAGE_ENEMY_CHARACTER2_BASE * currentLap;
-				}
-				else if(strncmp(tag[i], "enb0", COLLIDER2D_TAG_LENGTH) == 0)
-				{
-					playerCharacter.hp -= DAMAGE_ENEMY_BULLET0_BASE* currentLap;
-				}
-				else if(strncmp(tag[i], "trrn", COLLIDER2D_TAG_LENGTH) == 0)//terrain
-				{
-					playerCharacter.hp -= DAMAGE_TERRAIN_BASE* currentLap;
-				}
-				else if(strncmp(tag[i], "spnx", COLLIDER2D_TAG_LENGTH) == 0)//sphinx
-				{
-					playerCharacter.hp -= DAMAGE_SPHINX_BASE* currentLap;
-				}
-				else if(strncmp(tag[i], "spxl", COLLIDER2D_TAG_LENGTH) == 0)//sphinx lazer
-				{
-					playerCharacter.hp -= DAMAGE_SPHINX_LAZER_BASE* currentLap;
-				}
-				else
-				{
-					DE("what is this????\n")
-				}
+				if(strncmp(tag[i], "enc0", COLLIDER2D_TAG_LENGTH))
+				playerCharacter.hp -= 1;
 			}
 			addDestroyEffect(&playerCharacter.object->transform->position);
 			if(playerCharacter.hp <= 0)
@@ -980,10 +914,6 @@ void movePlayerCharacter()
 			}
 		}
 		//exit(0);
-	}
-	else
-	{
-		Object_set_invalid(dfxObj);
 	}
 
 	//
@@ -2288,7 +2218,7 @@ void initEnemyCharacter1()
 		Collider2D_register_collider(enemyCharacter1.collider[i], 24);
 		RectCollider* rc = (RectCollider*)(enemyCharacter1.collider[i]->colObj);
 		Vector2D_set_zero(&(rc->position));
-		rc->size.x = 20;
+		rc->size.x = 13;
 		rc->size.y = 25;
 		//enemyCharacter1.enemyBullet0[i] = (EnemyBullet0*)malloc(sizeof(EnemyBullet0));
 		//initEnemyBullet0(enemyCharacter1.enemyBullet0[i]);
@@ -2494,6 +2424,7 @@ void moveEnemyCharacter1()
 							Timer_reset_count(enemyCharacter1.timer[i]);
 							Vector2D v2;
 							Vector2D_set(&v2, &(enemyCharacter1.object[i]->transform->position));
+							v2.y += 10;
 							shotEnemyBullet0(&v2, &v);
 						}
 					}
@@ -2530,7 +2461,7 @@ void moveEnemyCharacter2()
 				{
 					if(enemyCharacter2.collider[i]->hits[ci] != NULL)
 					{
-						if(strncmp(enemyCharacter2.collider[i]->hits[ci]->tag, "trrn", COLLIDER2D_TAG_LENGTH) == 0)
+						if(strncmp(enemyCharacter2.collider[i]->hits[ci]->tag, "trrn", 4) == 0)
 						{
 							isTerrain = true;
 						}
@@ -3027,7 +2958,6 @@ void updateScoreObj()
 	static Image2D* idouble;
 	static Image2D* ibulspeed;
 	static Image2D* ibulnum;
-	static Image2D* ibulscale;
 	static Image2D* ispeed;
 	static Image2D* iselecter;
 
@@ -3073,7 +3003,6 @@ void updateScoreObj()
 		idouble = Image2D_new();
 		ibulnum = Image2D_new();
 		ibulspeed = Image2D_new();
-		ibulscale = Image2D_new();
 		ispeed = Image2D_new();
 		iselecter = Image2D_new();
 
@@ -3093,18 +3022,13 @@ void updateScoreObj()
 
 		ibulnum->p_transform->scale.x = 0.4;
 		ibulnum->p_transform->scale.y = 0.4;
-		ibulnum->p_transform->position.x = 60*4;
+		ibulnum->p_transform->position.x = 60*2;
 		ibulnum->p_transform->position.y = WINDOW_HEIGHT-60;
 
 		ibulspeed->p_transform->scale.x = 0.4;
 		ibulspeed->p_transform->scale.y = 0.4;
 		ibulspeed->p_transform->position.x = 60*1;
 		ibulspeed->p_transform->position.y = WINDOW_HEIGHT-60;
-
-		ibulscale->p_transform->scale.x = 0.4;
-		ibulscale->p_transform->scale.y = 0.4;
-		ibulscale->p_transform->position.x = 60*2;
-		ibulscale->p_transform->position.y = WINDOW_HEIGHT-60;
 
 		ispeed->p_transform->scale.x = 0.4;
 		ispeed->p_transform->scale.y = 0.4;
@@ -3122,7 +3046,6 @@ void updateScoreObj()
 		Image2D_load(idouble, "resource/image/text/double.png");
 		Image2D_load(ibulspeed, "resource/image/text/shotspeed.png");
 		Image2D_load(ibulnum, "resource/image/text/shotnum.png");
-		Image2D_load(ibulscale, "resource/image/text/bscale.png");
 		Image2D_load(ispeed, "resource/image/text/speed.png");
 		Image2D_load(iselecter, "resource/image/text/selecter.png");
 
@@ -3131,7 +3054,6 @@ void updateScoreObj()
 
 		Object_add_component(powerupObj, idouble);
 		Object_add_component(powerupObj, ibulspeed);
-		Object_add_component(powerupObj, ibulscale);
 		Object_add_component(powerupObj, ibulnum);
 		Object_add_component(powerupObj, ispeed);
 		Object_add_component(powerupObj, selecterObj);
@@ -3147,18 +3069,10 @@ void updateScoreObj()
 		scoreObjChild->transform->scale.x = 0.5;
 		scoreObjChild->transform->scale.y = 0.5;
 
-		hpObj->transform->scale.x = 4.48;
+		hpObj->transform->scale.x = 4;
 		hpObj->transform->scale.y = 1;
 		hpObj->transform->position.x = 5;
 		hpObj->transform->position.y = 30;
-
-		// dfx
-		dfxObj = Object_new();
-		damageEffect = Image2D_new();
-		Image2D_load(damageEffect, "resource/image/text/damageeffect.png");
-		Object_add_component(dfxObj, damageEffect);
-		Object_set_invalid(dfxObj);
-		Object_add_component(scoreObject, dfxObj);
 	}
 
 	int d;
@@ -3171,7 +3085,7 @@ void updateScoreObj()
 		Object_add_component(digiObj[SCORE_STRING_LENGTH-1-i], inum[(score%dd - score%d)/d]);
 	}
 
-	hpObj->transform->scale.x = playerCharacter.hp/PLAYER_CHARACTER_DEFAULT_HP * 4.48;
+	hpObj->transform->scale.x = playerCharacter.hp/PLAYER_CHARACTER_DEFAULT_HP * 4.0;
 	selecterObj->transform->position.x = powerupSelecter*60;
 
 }
@@ -3186,7 +3100,6 @@ void incScore(unsigned long long scr)
 // {{{
 void initDestroyEffect()
 {
-
 	DestroyEffect* eb = &destroyEffect0;
 
 	eb->masterObject = Object_new();
@@ -3370,7 +3283,6 @@ void stage0_init()
 	Collider2D_set_collider_object(pyramidCol3, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(pyramidCol4, COLLIDER2D_COLLIDER_RECT);
 
-
 	RectCollider* grc = (RectCollider*)(groundCol->colObj);
 	RectCollider* prc = (RectCollider*)(pyramidCol->colObj);
 	RectCollider* prc1 = (RectCollider*)(pyramidCol1->colObj);
@@ -3452,7 +3364,7 @@ void stage0_init()
 	pyramidObj0->transform->rotation.w = 45;
 
 
-	
+
 
 
 	Collider2D_register_collider(pyramidCol, 20);
@@ -3462,12 +3374,6 @@ void stage0_init()
 	Collider2D_register_collider(pyramidCol4, 20);
 	Collider2D_register_collider(groundCol, 20);
 
-	memcpy(pyramidCol->tag, "trrn", COLLIDER2D_TAG_LENGTH);
-	memcpy(pyramidCol1->tag, "trrn", COLLIDER2D_TAG_LENGTH);
-	memcpy(pyramidCol2->tag, "trrn", COLLIDER2D_TAG_LENGTH);
-	memcpy(pyramidCol3->tag, "trrn", COLLIDER2D_TAG_LENGTH);
-	memcpy(pyramidCol4->tag, "trrn", COLLIDER2D_TAG_LENGTH);
-	memcpy(groundCol->tag, "trrn", COLLIDER2D_TAG_LENGTH);
 
 	stage0Timer = Timer_new();
 
@@ -3622,7 +3528,7 @@ void stage0_update()
 
 	// wave 0 
 	if(enemyWave0 == false && st > enemyWave0start && st < enemyWave0start + enemyWave0length) {addEnemyCharacter0(&v, 0, 6); enemyWave0 = true;}		
-	if(st > enemyWave0start + enemyWave0length){Animation2D_play(bossReset);enemyWave0 = false;Animation2D_reset(wave0animation);Animation2D_reset(wave0childAnimation);}
+	if(st > enemyWave0start + enemyWave0length){enemyWave0 = false;Animation2D_reset(wave0animation);Animation2D_reset(wave0childAnimation);}
 
 	// wave 1 
 	if(enemyWave1 == false && st > enemyWave1start && st < enemyWave1start + enemyWave1length) {addEnemyCharacter0(&v, 6, 12); enemyWave1 = true;}		
