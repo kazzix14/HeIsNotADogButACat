@@ -26,7 +26,6 @@ typedef struct view
 View* View_new();
 void View_release(View* const);
 void View_begin_2d(const View*);
-void View_begin_3d(const View*);
 void View_begin();
 void View_end();
 void View_end_2d();

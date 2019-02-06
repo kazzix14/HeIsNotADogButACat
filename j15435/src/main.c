@@ -26,9 +26,9 @@
 #include "vector2d.h"
 #include "view.h"
 #include "animation2d.h"
-#include "animation_controller2d.h"
-#include "block2d.h"
-#include "grid3d.h"
+//#include "animation_controller2d.h"
+//#include "block2d.h"
+//#include "grid3d.h"
 #include "object.h"
 #include "audio.h"
 #include "debug.h"
@@ -105,8 +105,12 @@ typedef struct playercharacter
 {
 	Object* object;
 	Object* imageObject;
+	Object* imageObject1;
+	Object* imageObject2;
 	Collider2D* collider;
 	Image2D* image0;
+	Image2D* image1;
+	Image2D* image2;
 	double speed;
 	double hp;
 
@@ -198,9 +202,12 @@ typedef struct boss0
 
 	Audio* aPunch;
 	Audio* aMao;
+	Audio* aMaoMew;
 	Audio* aLazer;
 	Audio* aGass;
 	Audio* aBump;
+	Audio* aReflect;
+	Audio* aDamage;
 
 	double pint; //punch interval
 	double mint; //mao
@@ -263,6 +270,11 @@ struct waveargstruct
 
 // prototypes
 // {{{
+void initTitle();
+void updateTitle();
+void updateLb();
+void updateGo();
+
 void display(void);
 void reshape(int, int);
 void timer(int);
@@ -305,6 +317,7 @@ void addEnemyCharacter2(Vector2D* const pos);
 void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict);
 
 void updateTimer();
+void resetTimer();
 
 void initPowerupCore();
 void movePowerupCore();
@@ -327,6 +340,8 @@ void moveStopMove(Vector2D* const ret, const int f, const int i, const int fmax,
 void circleCircleCircle(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* radiusd);
 void moveStopMoveStraight(Vector2D* const ret, const int f, const int i, const int fmax, const int imin, const int imax, const double framelength, void* waveArgStruct);
 
+void initAllAllAllAllAll();
+
 void updateScoreObj();
 void incScore(unsigned long long);
 // }}}
@@ -339,6 +354,49 @@ void incScore(unsigned long long);
 
 // variable
 // {{{
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////	
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
+// 		1	:	game
+// 		2	:	title
+// 		3	:	gameover
+
+int scene; // 
+
+Object* titleMaster;
+Object* titleCursorOnPlay;
+Object* titleCursorOnLB;
+Object* titleCursorOnExit;
+Audio* aMoveCursor;
+Audio* aYES;
+
+Object* lbMaster;
+Object* lbdigiObj[9][SCORE_STRING_LENGTH];
+long long int lbscore[9] = {0};
+
+Object* goMaster;
+
+
+
+
+
+
+
+
+
+
+
+
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////	
+////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////
+
 View* view;
 
 double totaltime = 0;
@@ -347,6 +405,7 @@ double totaltime = 0;
 Object* dfxObj;
 Image2D* damageEffect;
 
+Audio* alevelup;
 
 PlayerCharacter playerCharacter;
 PlayerBullet0 playerBullet0;
@@ -366,7 +425,7 @@ DestroyEffect destroyEffect0;;
 
 Boss0 sphinx;
 bool sphinxNow;
-double timeSphinxApper = 80;
+const double timeSphinxApper = 80;
 int sphinxShotChance = 100;
 double sphinxLazerInterval = 0.6;
 Object* scoreObject;
@@ -382,12 +441,12 @@ Timer* backTimer;
 int backgroundWidth;
 
 Object* stage0;
-double stage0_moving_speed = 120;
+const double stage0_moving_speed = 120;
 double stage0ground0Offset;
 Timer* stage0Timer;
 
-unsigned long long currentLap;
-unsigned long long score;
+unsigned long long int currentLap;
+unsigned long long int score;
 const unsigned long long enemy0score = 100;
 const unsigned long long enemy1score = 200;
 const unsigned long long enemy2score = 150;
@@ -399,6 +458,8 @@ int enc0shotChance = 250;
 int enc1shotChance = 20;
 int enc2shotChance = 70;
 
+Image2D* inum[10];
+
 // }}}
 
 // main
@@ -408,6 +469,8 @@ int main(int argc, char **argv)
 	srand(1);
 	init_gl(&argc, argv, WINDOW_WIDTH, WINDOW_HEIGHT, "UNTI!!");
 	setColliderLayerMatrix();
+
+	scene = 2;
 	
 	view = View_new();
 	view->position.z = 1;
@@ -416,7 +479,6 @@ int main(int argc, char **argv)
 	view->window_height = WINDOW_HEIGHT;
 
 	currentLap = 1;
-
 	initPlayerCharacter();
 	initPlayerBullet0();
 	initEnemyCharacter0();
@@ -425,12 +487,15 @@ int main(int argc, char **argv)
 	initEnemyCharacter2();
 	initSphinx();
 
+
 	initDestroyEffect();
 
 	initPowerupCore();
 
 	initBackground();
 	stage0_init();
+
+	initTitle();
 
 	glutTimerFunc(0, timer, 0);
 	glutMainLoop();
@@ -448,19 +513,41 @@ void display(void)
 	keyboard();
 
 	View_begin_2d(view);
-		Object_put(backbase);
-		Object_put(stage0);
-		Object_put(sphinx.masterObject);
-		Object_put(playerCharacter.object);
-		Object_put(enemyCharacter0.masterObject);
-		Object_put(enemyCharacter1.masterObject);
-		Object_put(enemyCharacter2.masterObject);
-		Object_put(destroyEffect0.masterObject);
-		Object_put(playerBullet0.masterObject);
-		Object_put(enemyBullet0.masterObject);
-		Object_put(powerupCore.masterObject);
-		Object_put(scoreObject);
-		Collider2D_judge_all();
+	switch(scene)
+	{
+		case 1:
+		
+			Object_put(backbase);
+			Object_put(stage0);
+			Object_put(sphinx.masterObject);
+			Object_put(playerCharacter.object);
+			Object_put(enemyCharacter0.masterObject);
+			Object_put(enemyCharacter1.masterObject);
+			Object_put(enemyCharacter2.masterObject);
+			Object_put(destroyEffect0.masterObject);
+			Object_put(playerBullet0.masterObject);
+			Object_put(enemyBullet0.masterObject);
+			Object_put(powerupCore.masterObject);
+			Object_put(scoreObject);
+			Collider2D_judge_all();
+			
+			break;
+		case 2:
+			Object_put(titleMaster);
+
+			break;
+
+		case 3:
+			Object_put(goMaster);
+
+			break;
+		case 4:
+			Object_put(lbMaster);
+			break;
+		default:
+			DE("mm?");
+			break;
+	}
 	View_end_2d();
 
 	glFlush();
@@ -476,26 +563,61 @@ void timer(int value)
 	glutTimerFunc(16, timer, 0);
 	glutPostRedisplay();
 
-	updateTimer();
+		updateScoreObj();
+		moveBackground();
+		movePlayerBullet0();
+		movePlayerCharacter();
+		moveEnemyBullet0();
+		movePowerupCore();
+		moveDestroyEffect();
+	switch(scene)
+	{
+		case 2:
+			///// title
+			//
 
-	updateScoreObj();
+			updateTitle();
 
-	moveBackground();
-
-	stage0_update();
-
-	movePlayerBullet0();
-	movePlayerCharacter();
-	moveEnemyCharacter0();
-	moveEnemyCharacter1();
-	moveEnemyCharacter2();
-	moveEnemyBullet0();
-	movePowerupCore();
-	moveDestroyEffect();
-	moveSphinx();
+			//
+			///// title
+			break;
 
 
-	fps();
+		case 1:
+			//////	game
+			//
+			
+			updateTimer();
+			stage0_update();
+
+			moveEnemyCharacter0();
+			moveEnemyCharacter1();
+			moveEnemyCharacter2();
+			moveSphinx();
+
+			//
+			//////	game
+			break;
+		case 3:
+			///// gameover
+			//
+			updateGo();	
+			//
+			///// gameover
+			break;
+		case 4:
+			//// lb
+			//
+			updateLb();
+			break;
+		default:
+			DE("scene????\n")
+			break;
+	}
+
+	DDO(
+		fps();
+	)
 }
 // }}}
 
@@ -567,14 +689,7 @@ void mouse(int b, int s, int x, int y)
 void keyboard()
 {
 	if(Keyboard_is_pressed(27))
-		exit(0);
-
-	if(Keyboard_is_down(','))
-		sphinx.uarm->transform->rotation.w += 3;
-	if(Keyboard_is_down('m'))
-		sphinx.larm->transform->rotation.w += 3;
-	if(Keyboard_is_down('n'))
-		sphinx.body->transform->rotation.w += 3;
+		scene = 2;
 
 	Keyboard_update();
 }
@@ -654,17 +769,64 @@ void initPlayerCharacter()
 	powerupSelecter = 0;
 	playerCharacter.object = Object_new();
 	playerCharacter.imageObject = Object_new();
+	playerCharacter.imageObject1 = Object_new();
+	playerCharacter.imageObject2 = Object_new();
 	playerCharacter.collider = Collider2D_new();
 	playerCharacter.image0 = Image2D_new();
+	playerCharacter.image1 = Image2D_new();
+	playerCharacter.image2 = Image2D_new();
 	playerCharacter.timer = Timer_new();
 	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
 	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 
-	playerCharacter.imageObject->transform->position.x = -4;
-	playerCharacter.imageObject->transform->position.y = -7;
+	Image2D* b0;
+	Image2D* b1;
+	Image2D* b2;
 
-	playerCharacter.object->transform->position.x = 300;
-	playerCharacter.object->transform->position.y = 300;
+	b0 = Image2D_new();
+	b1 = Image2D_new();
+	b2 = Image2D_new();
+	Image2D_load(b0, "resource/image/player/plane/b0.png");
+	Image2D_load(b1, "resource/image/player/plane/b1.png");
+	Image2D_load(b2, "resource/image/player/plane/b2.png");
+	
+	Object* bo;
+	Object* bo1;
+	Object* bo2;
+	bo = Object_new();
+	bo1 = Object_new();
+	bo2 = Object_new();
+	bo->transform->position.y = 18;
+	bo->transform->scale.y = 1.1;
+	bo->transform->position.x = -9;
+
+	bo1->transform->position.y = 16;
+	bo1->transform->scale.y = 1.1;
+	bo1->transform->position.x = -9;
+
+	bo2->transform->position.y = 16;
+	bo2->transform->scale.y = 1.1;
+	bo2->transform->position.x = -9;
+	
+	Object_add_component(bo, b0);
+	Object_add_component(bo1, b1);
+	Object_add_component(bo2, b2);
+	Object_add_component(playerCharacter.imageObject, bo);
+	Object_add_component(playerCharacter.imageObject1, bo1);
+	Object_add_component(playerCharacter.imageObject2, bo2);
+
+
+	playerCharacter.imageObject->transform->position.x = -4;
+	playerCharacter.imageObject->transform->position.y = -16;
+
+	playerCharacter.imageObject1->transform->position.x = -4;
+	playerCharacter.imageObject1->transform->position.y = -16;
+
+	playerCharacter.imageObject2->transform->position.x = -4;
+	playerCharacter.imageObject2->transform->position.y = -16;
+
+	playerCharacter.object->transform->position.x = 30000;
+	playerCharacter.object->transform->position.y = 30000;
 	strncpy(playerCharacter.collider->tag, "plch", 4);
 
 	Collider2D_set_collider_object(playerCharacter.collider, COLLIDER2D_COLLIDER_RECT);
@@ -675,10 +837,22 @@ void initPlayerCharacter()
 	rc->size.y = 10;
 
 	Image2D_load(playerCharacter.image0, "resource/image/player/plane/0.png");
+	Image2D_load(playerCharacter.image1, "resource/image/player/plane/1.png");
+	Image2D_load(playerCharacter.image2, "resource/image/player/plane/2.png");
 
 	Object_add_component(playerCharacter.imageObject, playerCharacter.image0);
+	Object_add_component(playerCharacter.imageObject1, playerCharacter.image1);
+	Object_add_component(playerCharacter.imageObject2, playerCharacter.image2);
 	Object_add_component(playerCharacter.object, playerCharacter.imageObject);
+	Object_add_component(playerCharacter.object, playerCharacter.imageObject1);
+	Object_add_component(playerCharacter.object, playerCharacter.imageObject2);
 	Object_add_component(playerCharacter.object, playerCharacter.collider);
+
+	Object_set_invalid(playerCharacter.imageObject1);
+	Object_set_invalid(playerCharacter.imageObject2);
+
+	alevelup = Audio_new(2);
+	Audio_load(alevelup, "resource/audio/powerup.wav");
 
 }
 
@@ -687,11 +861,11 @@ void initPlayerBullet0()
 	playerBullet0.timer = Timer_new();
 	playerBullet0.masterObject = Object_new();
 	playerBullet0.image0 = Image2D_new();
-	playerBullet0.audioShot = Audio_new(PLAYER_CHARACTER_BULLET_NUM_LIMIT+16);
+	playerBullet0.audioShot = Audio_new(16);
 	playerBullet0.bulletNum = PLAYER_CHARACTER_DEFAULT_BULLET_NUM;
 	
-	Image2D_load(playerBullet0.image0, "resource/image/player/bullet/0.png");
 	Audio_load(playerBullet0.audioShot, "resource/audio/player/bullet/shot0.wav");
+	Image2D_load(playerBullet0.image0, "resource/image/player/bullet/0.png");
 
 	Timer_reset_count(playerBullet0.timer);
 	playerBullet0.speed = PLAYER_CHARACTER_BULLET_DEFAULT_SPEED;
@@ -722,6 +896,7 @@ void initPlayerBullet0()
 		Object_add_component(playerBullet0.masterObject, pbo);
 
 		Object_set_invalid(pbo);
+		pbc->isValid = false;
 	}
 }
 // }}}
@@ -730,13 +905,15 @@ void initPlayerBullet0()
 // {{{
 void movePlayerCharacter()
 {
-	if(Keyboard_is_pressed('u') || Keyboard_is_pressed('e'))
+
+	if(Keyboard_is_pressed('u'))
 	{
 		switch(powerupSelecter)
 		{
 			case 1:// speed
 				if(playerCharacter.speed < PLAYER_CHARACTER_LIMIT_SPEED)
 				{
+					Audio_play(alevelup);
 					playerCharacter.speed += POWERUPCORE_OBTAIN_SPEED;
 					powerupSelecter = 0;
 				}
@@ -744,6 +921,7 @@ void movePlayerCharacter()
 			case 2:// bspeed
 				if(playerBullet0.speed < PLAYER_CHARACTER_BULLET_LIMIT_SPEED)
 				{
+					Audio_play(alevelup);
 					playerBullet0.speed += POWERUPCORE_OBTAIN_BULLETSPEED;
 					powerupSelecter = 0;
 				}
@@ -757,6 +935,7 @@ void movePlayerCharacter()
 						playerBullet0.object[i]->transform->scale.y *= POWERUPCORE_BULLETSCALE;
 						powerupSelecter = 0;
 					}
+					Audio_play(alevelup);
 				}
 				break;
 			case 4://bdouble
@@ -764,6 +943,7 @@ void movePlayerCharacter()
 				{
 					pbDouble++;
 					powerupSelecter = 0;
+					Audio_play(alevelup);
 				}
 				break;
 			case 5:// bnum
@@ -771,6 +951,7 @@ void movePlayerCharacter()
 				{
 					playerBullet0.bulletNum++;
 					powerupSelecter = 0;
+					Audio_play(alevelup);
 				}
 				break;
 
@@ -786,32 +967,41 @@ void movePlayerCharacter()
 			addPowerupCore(&v);
 	   )
 
-	if(Keyboard_is_down('a') || Keyboard_is_down('k'))
+	Object_set_invalid(playerCharacter.imageObject1);
+	Object_set_invalid(playerCharacter.imageObject2);
+	Object_set_valid(playerCharacter.imageObject);
+	if(Keyboard_is_down('a'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.x -= spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('d') || Keyboard_is_down(';'))
+	if(Keyboard_is_down('d'))
 	{
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.x += spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('w') || Keyboard_is_down('o'))
+	if(Keyboard_is_down('w'))
 	{
+		Object_set_invalid(playerCharacter.imageObject1);
+		Object_set_invalid(playerCharacter.imageObject);
+		Object_set_valid(playerCharacter.imageObject2);
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.y -= spf * playerCharacter.speed;
 	}
-	if(Keyboard_is_down('s') || Keyboard_is_down('l'))
+	if(Keyboard_is_down('s'))
 	{
+		Object_set_invalid(playerCharacter.imageObject);
+		Object_set_invalid(playerCharacter.imageObject2);
+		Object_set_valid(playerCharacter.imageObject1);
 		double spf;
 		Timer_get_spf(playerCharacter.timer, &spf);
 		playerCharacter.object->transform->position.y += spf * playerCharacter.speed;
 	}
 
-	if(Keyboard_is_pressed('j') || Keyboard_is_pressed('f'))
+	if(Keyboard_is_pressed('j') || Keyboard_is_pressed('k'))
 	{
 		double count;
 		Timer_get_count(playerBullet0.timer, &count);
@@ -830,7 +1020,7 @@ void movePlayerCharacter()
 					playerBullet0.collider[i]->isValid = true;
 					Audio_play(playerBullet0.audioShot);
 					playerBullet0.object[i]->transform->position.x = playerCharacter.object->transform->position.x + 60;
-					playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 8;
+					playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 4;
 					playerBullet0.direction[i].x = 1.0;
 					playerBullet0.direction[i].y = 0.0;
 					if(pbDouble > 0)
@@ -848,7 +1038,7 @@ void movePlayerCharacter()
 									playerBullet0.collider[i]->isValid = true;
 									Audio_play(playerBullet0.audioShot);
 									playerBullet0.object[i]->transform->position.x = playerCharacter.object->transform->position.x + 60;
-									playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 8;
+									playerBullet0.object[i]->transform->position.y = playerCharacter.object->transform->position.y + 4;
 									playerBullet0.direction[i].x = 1.0;
 									playerBullet0.direction[i].y = (((double)rand()/(double)RAND_MAX)-0.5)*pbDouble/PLAYER_CHARACTER_LIMIT_DOUBLE;
 									Vector2D_normalize(&playerBullet0.direction[i]);
@@ -874,21 +1064,27 @@ void movePlayerCharacter()
 		bool damage = false;
 		char tag[COLLIDER2D_HITS_NUM][COLLIDER2D_TAG_LENGTH];
 		int tagnum = 0;
-		for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
+		double st;
+		Timer_get_count(stage0Timer, &st);
+
+		if(st > 1.0)
 		{
-			if(playerCharacter.collider->hits[i] != NULL)
+			for(int i = 0; i < COLLIDER2D_HITS_NUM; i++)
 			{
-				if(strncmp(playerCharacter.collider->hits[i]->tag, "pu", 2) == 0)
+				if(playerCharacter.collider->hits[i] != NULL)
 				{
-					pucore = true;
-					memcpy(tag[tagnum], playerCharacter.collider->hits[i]->tag, COLLIDER2D_TAG_LENGTH);
-					tagnum++;
-				}
-				else
-				{
-					damage = true;
-					memcpy(tag[tagnum], playerCharacter.collider->hits[i]->tag, COLLIDER2D_TAG_LENGTH);
-					tagnum++;
+					if(strncmp(playerCharacter.collider->hits[i]->tag, "pu", 2) == 0)
+					{
+						pucore = true;
+						memcpy(tag[tagnum], playerCharacter.collider->hits[i]->tag, COLLIDER2D_TAG_LENGTH);
+						tagnum++;
+					}
+					else
+					{
+						damage = true;
+						memcpy(tag[tagnum], playerCharacter.collider->hits[i]->tag, COLLIDER2D_TAG_LENGTH);
+						tagnum++;
+					}
 				}
 			}
 		}
@@ -967,19 +1163,60 @@ void movePlayerCharacter()
 			addDestroyEffect(&playerCharacter.object->transform->position);
 			if(playerCharacter.hp <= 0)
 			{
+				playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 				DDO(
 					DPIF(true,
 					   "\x1b[41m---------------------------------------------------------\n"
 					   "You Died!!\n"
 					   "---------------------------------------------------------\n\x1b[40m"
 					);
-					playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 					return;
 				)
-				exit(0);
+				if(scene == 1)
+				{
+					scene = 3;
+
+
+					int isu = -1;
+					for(int i = 0;i < 9; i++)
+					{
+						if(score > lbscore[i] && isu == -1)
+						{
+							isu = i;
+						}
+					}
+
+					if(isu != -1)
+					{
+						for(int i = 9-1; i > 0; i--)
+						{
+							if(i == isu)
+							{
+								lbscore[isu] = score;
+								break;
+							}
+							lbscore[i] = lbscore[i-1];
+						}
+						FILE *fp;
+						if((fp = fopen("scr","w")) == NULL)
+						{
+							DP("failed to open a score file\n");
+						}
+						else
+						{
+							for(int i = 0; i < 9; i++)
+							{
+								fprintf(fp, "%lld\n", lbscore[i]);
+							}
+						}
+						fclose(fp);
+					}
+
+
+
+				}
 			}
 		}
-		//exit(0);
 	}
 	else
 	{
@@ -1130,9 +1367,12 @@ void initSphinx()
 
 	sphinx.aPunch = Audio_new(2);
 	sphinx.aMao = Audio_new(2);
-	sphinx.aLazer = Audio_new(16);
-	sphinx.aGass = Audio_new(16);
+	sphinx.aMaoMew = Audio_new(2);
+	sphinx.aLazer = Audio_new(2);
+	sphinx.aGass = Audio_new(2);
 	sphinx.aBump = Audio_new(2);
+	sphinx.aDamage = Audio_new(10);
+	sphinx.aReflect = Audio_new(10);
 
 	sphinx.pint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
 	sphinx.mint = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
@@ -1175,7 +1415,10 @@ void initSphinx()
 	Audio_load(sphinx.aLazer, "resource/audio/sphinx/prelazer.wav"); // lazer
 	Audio_load(sphinx.aGass, "resource/audio/sphinx/mew3.wav");  // jaw
 	Audio_load(sphinx.aBump, "resource/audio/sphinx/mew4.wav"); // sweep
-	
+	Audio_load(sphinx.aReflect, "resource/audio/sphinx/reflect.wav");  // jaw
+	Audio_load(sphinx.aDamage, "resource/audio/sphinx/damage.wav"); // sweep
+	Audio_load(sphinx.aMaoMew, "resource/audio/sphinx/mewmewmew.wav"); // sweep
+
 	sphinx.bdcol = Collider2D_new();
 	sphinx.ulcol = Collider2D_new();
 	sphinx.llcol = Collider2D_new();
@@ -1402,7 +1645,6 @@ void initSphinx()
 	sphinxNow = false;
 	double neww;
 	Vector2D v;
-	bool b;
 
 	Object_set_invalid(sphinx.lazer);
 
@@ -1832,6 +2074,7 @@ void initSphinx()
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.childObject->transform->scale), &(sphinx.childObject->transform->scale), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.headp->transform->position), &(sphinx.headp->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 
+
 }
 // }}}
 
@@ -2015,8 +2258,11 @@ void moveSphinx()
 			{
 				sphinx.hp1 -= 10;
 				DP("sphinx.hp1 : %f!!!!!!\n", sphinx.hp1);
+				Audio_play(sphinx.aDamage);
+
 				if(sphinx.hp1 <= 0)
 				{
+					Audio_play(sphinx.aMao);
 					Timer_reset_count(sphinx.timer);
 					hp10 = true;
 				}
@@ -2025,8 +2271,10 @@ void moveSphinx()
 			{
 				sphinx.hp1 -= 1;
 				DP("sphinx.hp1 : %f\n", sphinx.hp1);
+				Audio_play(sphinx.aReflect);
 				if(sphinx.hp1 <= 0)
 				{
+					Audio_play(sphinx.aMao);
 					Timer_reset_count(sphinx.timer);
 					hp10 = true;
 				}
@@ -2089,12 +2337,19 @@ void moveSphinx()
 			{
 				sphinx.hp2 -= 10;
 				DP("sphinx.hp2 : %f!!!!!!\n", sphinx.hp2);
+				Audio_play(sphinx.aDamage);
 				if(sphinx.hp2 <= 0)
 				{
+					setSphinxColInvalid();
 					Timer_reset_count(sphinx.timer);
 					hp20 = true;
 					incScore(sphinxScore);
+					Audio_play(sphinx.aMaoMew);
 				}
+			}
+			else if(flag == true)
+			{
+				Audio_play(sphinx.aReflect);
 			}
 		}
 	}
@@ -2116,15 +2371,16 @@ void moveSphinx()
 			setSphinxColInvalid();
 			hp20 = false;
 			hp10 = false;
+
 		}
-		if(sphinx.hp2 > 0)
+	}
+	if(sphinx.hp2 > 0)
+	{
+		if(sphinx.hp1 > 0)
 		{
-			if(sphinx.hp1 > 0)
+			if(sphinx.childObject->transform->position.x > 2000)
 			{
-				if(sphinx.childObject->transform->position.x > 2000)
-				{
-					Animation2D_play(bossReset);
-				}
+				Animation2D_play(bossReset);
 			}
 		}
 	}
@@ -2206,6 +2462,9 @@ void initEnemyCharacter0()
 		Object_add_component(enemyCharacter0.object[i], enemyCharacter0.childObject[i]);
 		//Object_add_component(enemyCharacter0.object[i], enemyCharacter0.enemyBullet0[i]->masterObject);
 		Object_add_component(enemyCharacter0.masterObject, enemyCharacter0.object[i]);
+
+		enemyCharacter0.collider[i]->isValid = false;
+		Object_set_invalid(enemyCharacter0.object[i]);
 	}
 
 
@@ -2262,6 +2521,7 @@ void initEnemyBullet0()
 		Object_add_component(eb->masterObject, pbo);
 
 		Object_set_invalid(pbo);
+		pbc->isValid = false;
 	}
 }
 // }}}
@@ -2311,6 +2571,9 @@ void initEnemyCharacter1()
 		Object_add_component(enemyCharacter1.object[i], enemyCharacter1.childObject[i]);
 		//Object_add_component(enemyCharacter1.object[i], enemyCharacter1.enemyBullet0[i]->masterObject);
 		Object_add_component(enemyCharacter1.masterObject, enemyCharacter1.object[i]);
+
+		enemyCharacter1.collider[i]->isValid = false;
+		Object_set_invalid(enemyCharacter1.object[i]);
 	}
 
 
@@ -2449,7 +2712,6 @@ void moveEnemyCharacter0()
 }
 void moveEnemyCharacter1()
 {
-	int shotChance = 200;
 	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
 	{
 		double spf;
@@ -2767,7 +3029,7 @@ void shotEnemyBullet0(Vector2D* const src, Vector2D* const dict)
 }
 // }}}
 
-// update timer
+// timers
 // {{{
 void updateTimer()
 {
@@ -2813,6 +3075,52 @@ void updateTimer()
 	Timer_count(sphinx.timer);
 	Timer_count(sphinx.lazerTimer);
 }
+
+void resetTimer()
+{
+	Timer_reset_count(playerCharacter.timer);
+	Timer_reset_count(playerBullet0.timer);
+
+	Timer_reset_count(enemyCharacter0.masterTimer);
+	Timer_reset_count(enemyBullet0.masterTimer);
+
+	Timer_reset_count(enemyCharacter1.masterTimer);
+	Timer_reset_count(enemyCharacter2.masterTimer);
+
+	Timer_reset_count(powerupCore.masterTimer);
+	Timer_reset_count(destroyEffect0.masterTimer);
+
+	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
+	{
+		Timer_reset_count(enemyBullet0.timer[i]);
+	}
+
+	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	{
+		Timer_reset_count(enemyCharacter0.timer[i]);
+	}
+
+	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
+	{
+		Timer_reset_count(enemyCharacter1.timer[i]);
+	}
+
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
+	{
+		Timer_reset_count(enemyCharacter2.timer[i]);
+	}
+
+	for(int i = 0; i < DESTROY_EFFECT_NUM; i++)
+	{
+		Timer_reset_count(destroyEffect0.timer[i]);
+	}
+
+	Timer_reset_count(backTimer);
+	Timer_reset_count(stage0Timer);
+	Timer_reset_count(sphinx.timer);
+	Timer_reset_count(sphinx.lazerTimer);
+
+}
 // }}}
 
 // powerup core
@@ -2828,7 +3136,7 @@ void initPowerupCore()
 	eb->masterTimer = Timer_new();
 	
 	Image2D_load(eb->image0, "resource/image/core/powerupcore/0.png");
-	Audio_load(eb->audioGet, "resource/audio/enemy/bullet/shot0.wav");
+	Audio_load(eb->audioGet, "resource/audio/getcore.wav");
 
 	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
 	{
@@ -2860,6 +3168,7 @@ void initPowerupCore()
 		Object_add_component(eb->masterObject, pbo);
 
 		Object_set_invalid(pbo);
+		pbc->isValid = false;
 	}
 }
 
@@ -3034,7 +3343,6 @@ void moveBackground()
 void updateScoreObj()
 {
 	
-	static Image2D* inum[10];
 	static Image2D* iscore;
 
 	static Image2D* idouble;
@@ -3058,7 +3366,6 @@ void updateScoreObj()
 	if(isInitialized == false)
 	{
 		isInitialized = true;
-		char path[64];
 
 		scoreObject = Object_new();
 		scoreObjChild = Object_new();
@@ -3070,19 +3377,21 @@ void updateScoreObj()
 		{
 			digiObj[i] = Object_new();
 			digiObj[i]->transform->position.x = 216 + i*33;
+			digiObj[i]->transform->position.y = 5;
+			digiObj[i]->transform->scale.x = 0.13;
+			digiObj[i]->transform->scale.y = 0.15;
 			Object_add_component(scoreObjChild, digiObj[i]);
 		}
 
-		for(int i = 0; i < 10; i++)
-		{
-			snprintf(path, 64, "resource/image/text/number/%d.png", i);
-			inum[i] = Image2D_new();
-			Image2D_load(inum[i], path);
-			Object_add_component(digiObj[i], inum[i]);
-		}
-
+	for(int i = 0; i < 10; i++)
+	{
+		Object_add_component(digiObj[i], inum[i]);
+	}
 
 		iscore = Image2D_new();
+		iscore->p_transform->position.x = 10;
+		iscore->p_transform->scale.x = 0.13;
+		iscore->p_transform->scale.y = 0.15;
 		idouble = Image2D_new();
 		ibulnum = Image2D_new();
 		ibulspeed = Image2D_new();
@@ -3184,7 +3493,7 @@ void updateScoreObj()
 		Object_add_component(digiObj[SCORE_STRING_LENGTH-1-i], inum[(score%dd - score%d)/d]);
 	}
 
-	hpObj->transform->scale.x = playerCharacter.hp/PLAYER_CHARACTER_DEFAULT_HP * 4.48;
+	ihpbar->p_transform->scale.x = playerCharacter.hp/(double)PLAYER_CHARACTER_DEFAULT_HP;
 	selecterObj->transform->position.x = powerupSelecter*60;
 
 }
@@ -3205,7 +3514,7 @@ void initDestroyEffect()
 	eb->masterObject = Object_new();
 	eb->image0 = Image2D_new();
 	eb->masterTimer = Timer_new();
-	eb->audioDestroy = Audio_new(DESTROY_EFFECT_NUM);
+	eb->audioDestroy = Audio_new(DESTROY_EFFECT_NUM+8);
 	eb->fadeTime = DESTROY_EFFECT_FADETIME;
 	
 	Image2D_load(eb->image0, "resource/image/enemy/plane/destroy.png");
@@ -3317,6 +3626,18 @@ Object* groundObj0;
 double stage0ground0length;
 double stage0ground0time = 60;
 
+bool stage0v = false;
+bool enemyWave0 = false;
+bool enemyWave1 = false;
+bool enemyFollow0 = false;
+bool enemyFollow1 = false;
+bool enemyWave2 = false;
+bool enemyWave3 = false;
+bool enemyFollow2 = false;
+bool enemyWave4 = false;
+bool enemyFixed0 = false;
+bool enemyFollow3 = false;
+
 void stage0_init()
 {
 	Image2D* pyramidImg;
@@ -3381,7 +3702,6 @@ void stage0_init()
 	Collider2D_set_collider_object(pyramidCol2, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(pyramidCol3, COLLIDER2D_COLLIDER_RECT);
 	Collider2D_set_collider_object(pyramidCol4, COLLIDER2D_COLLIDER_RECT);
-
 
 	RectCollider* grc = (RectCollider*)(groundCol->colObj);
 	RectCollider* prc = (RectCollider*)(pyramidCol->colObj);
@@ -3473,6 +3793,7 @@ void stage0_init()
 	Collider2D_register_collider(pyramidCol3, 20);
 	Collider2D_register_collider(pyramidCol4, 20);
 	Collider2D_register_collider(groundCol, 20);
+
 
 	memcpy(pyramidCol->tag, "trrn", COLLIDER2D_TAG_LENGTH);
 	memcpy(pyramidCol1->tag, "trrn", COLLIDER2D_TAG_LENGTH);
@@ -3566,54 +3887,40 @@ void stage0_update()
 	Timer_get_spf(stage0Timer, &spf);
 
 	const double stage0appear = 0.01;
-	static bool stage0v = false;
 
 	const double enemyWave0start = 1.0;
-	const double enemyWave0length = 12.8;
-	static bool enemyWave0 = false;
+	const double enemyWave0length = 14.8;
 
 	const double enemyWave1start = 6.0;
-	const double enemyWave1length = 12.8;
-	static bool enemyWave1 = false;
+	const double enemyWave1length = 14.8;
 
 	const double enemyFollow0start = 10.0;
 	const double enemyFollow0length = 5.0;
-	static bool enemyFollow0 = false;
 
 	const double enemyFollow1start = 13.0;
 	const double enemyFollow1length = 5.0;
-	static bool enemyFollow1 = false;
 
 	const double enemyWave2start = 20.0;
-	const double enemyWave2length = 12.8;
-	static bool enemyWave2 = false;
+	const double enemyWave2length = 14.8;
 
 	const double enemyWave3start = 25.0;
-	const double enemyWave3length = 12.8;
-	static bool enemyWave3 = false;
+	const double enemyWave3length = 14.8;
 
 	const double enemyFollow2start = 30.0;
 	const double enemyFollow2length = 5.0;
-	static bool enemyFollow2 = false;
 
 	const double enemyWave4start = 35.0;
-	const double enemyWave4length = 12.0;
-	static bool enemyWave4 = false;
+	const double enemyWave4length = 14.0;
 
 	const double enemyFixed0start= 43.6;
 	const double enemyFixed0length = 25.0;
-	static bool enemyFixed0 = false;
 
 	const double enemyFollow3start = 55.5;
 	const double enemyFollow3length = 10.0;
-	static bool enemyFollow3 = false;
 
 	Vector2D v;
 	v.x = WINDOW_WIDTH + 200;
 	v.y = WINDOW_HEIGHT / 2;
-
-	if(Keyboard_is_pressed('h'))
-		addPowerupCore(&v);
 
 
 	if(enemyWave0 == true){Animation2D_play(wave0childAnimation);
@@ -3711,29 +4018,29 @@ void stage0_update()
 	Animation2D_reset(bossStandUpAnim);
 	Object_set_valid(sphinx.masterObject);
 
-	enc0shotChance *= 0.75;
-	enc1shotChance *= 0.83;
-	enc2shotChance *= 0.92;
+	enc0shotChance *= 0.65;
+	enc1shotChance *= 0.77;
+	enc2shotChance *= 0.87;
 
-	enemyCharacter0.interval *= 0.76;
-	enemyCharacter1.interval *= 0.9;
-	enemyCharacter2.interval *= 0.82;
+	enemyCharacter0.interval *= 0.66;
+	enemyCharacter1.interval *= 0.8;
+	enemyCharacter2.interval *= 0.92;
 
-	enemyCharacter1.speed *= 1.3;
+	enemyCharacter1.speed *= 1.4;
 
 	sphinx.hp2 = SPHINX_DEFAULT_HP2;
 	sphinx.hp1 = SPHINX_DEFAULT_HP1;
 
-	sphinxShotChance *= 0.84;
-	sphinxLazerInterval *= 0.91;
+	sphinxShotChance *= 0.70;
+	sphinxLazerInterval *= 0.87;
 
-	enemyBullet0.speed *= 1.15;
+	enemyBullet0.speed *= 1.24;
 
 
 	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
 	{
-		enemyBullet0.object[i]->transform->scale.x *= 1.19;
-		enemyBullet0.object[i]->transform->scale.y *= 1.19;
+		enemyBullet0.object[i]->transform->scale.x *= 1.36;
+		enemyBullet0.object[i]->transform->scale.y *= 1.36;
 	}
 
 	currentLap++;
@@ -3847,5 +4154,411 @@ void setStageAnimation(Animation2D* const anm, const int fnum, Object** const ob
 
 
 // }}}
+
+//
+/////
+//
+////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////
+//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//\//
+///////////////////////////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////////////
+//
+/////
+//
+
+
+// init title
+// {{{
+
+void initTitle()
+{
+	titleMaster = Object_new();
+	titleCursorOnPlay = Object_new();
+	titleCursorOnLB = Object_new();
+	titleCursorOnExit = Object_new();
+
+	Image2D* iTitle;
+	Image2D* iExit;
+	Image2D* iPlay;
+	Image2D* iLB;
+	Image2D* iPlayb;
+	Image2D* iLBb;
+	Image2D* iExitb;
+
+	Image2D* iCursor;
+
+	iTitle = Image2D_new();
+	iPlay = Image2D_new();
+	iPlayb = Image2D_new();
+	iLB = Image2D_new();
+	iLBb = Image2D_new();
+	iExit = Image2D_new();
+	iExitb = Image2D_new();
+	iCursor = Image2D_new();
+
+	Image2D_load(iTitle, "resource/image/text/title.png");
+	Image2D_load(iPlay, "resource/image/text/pltext.png");
+	Image2D_load(iPlayb, "resource/image/text/pltextb.png");
+	Image2D_load(iLB, "resource/image/text/lbtext.png");
+	Image2D_load(iLBb, "resource/image/text/lbtextb.png");
+	Image2D_load(iExit, "resource/image/text/exit.png");
+	Image2D_load(iExitb, "resource/image/text/exitb.png");
+	Image2D_load(iCursor, "resource/image/text/light.png");
+
+	iTitle->option = IMAGE2D_CENTER;
+	iPlay->option = IMAGE2D_CENTER;
+	iPlayb->option = IMAGE2D_CENTER;
+	iLB->option = IMAGE2D_CENTER;
+	iLBb->option = IMAGE2D_CENTER;
+	iExit->option = IMAGE2D_CENTER;
+	iExitb->option = IMAGE2D_CENTER;
+	iCursor->option = IMAGE2D_CENTER;
+
+	iCursor->p_transform->scale.x = 0.1;
+	iCursor->p_transform->scale.y = 0.1;
+
+	iTitle->p_transform->scale.x = 0.11;
+	iTitle->p_transform->scale.y = 0.11;
+	iTitle->p_transform->position.x = WINDOW_WIDTH/2.0;
+	iTitle->p_transform->position.y = 250;
+
+	iPlay->p_transform->scale.x = 0.1;
+	iPlay->p_transform->scale.y = 0.1;
+	titleCursorOnPlay->transform->position.x = WINDOW_WIDTH/2.0;
+	titleCursorOnPlay->transform->position.y = 490;
+
+	iPlayb->p_transform->scale.x = 0.1;
+	iPlayb->p_transform->scale.y = 0.1;
+	iPlayb->p_transform->position.x = WINDOW_WIDTH/2.0;
+	iPlayb->p_transform->position.y = 490;
+
+	iLB->p_transform->scale.x = 0.1;
+	iLB->p_transform->scale.y = 0.1;
+	titleCursorOnLB->transform->position.x = WINDOW_WIDTH/2.0;
+	titleCursorOnLB->transform->position.y = 560;
+
+	iLBb->p_transform->scale.x = 0.1;
+	iLBb->p_transform->scale.y = 0.1;
+	iLBb->p_transform->position.x = WINDOW_WIDTH/2.0;
+	iLBb->p_transform->position.y = 560;
+
+	iExit->p_transform->scale.x = 0.1;
+	iExit->p_transform->scale.y = 0.1;
+	titleCursorOnExit->transform->position.x = WINDOW_WIDTH/2.0;
+	titleCursorOnExit->transform->position.y = 620;
+
+	iExitb->p_transform->scale.x = 0.1;
+	iExitb->p_transform->scale.y = 0.1;
+	iExitb->p_transform->position.x = WINDOW_WIDTH/2.0;
+	iExitb->p_transform->position.y = 620;
+
+	Object_add_component(titleMaster, iTitle);
+	Object_add_component(titleMaster, iPlayb);
+	Object_add_component(titleMaster, iLBb);
+	Object_add_component(titleMaster, iExitb);
+
+	Object_add_component(titleCursorOnPlay, iCursor);
+	Object_add_component(titleCursorOnPlay, iPlay);
+	Object_add_component(titleCursorOnLB, iCursor);
+	Object_add_component(titleCursorOnLB, iLB);
+	Object_add_component(titleCursorOnExit, iCursor);
+	Object_add_component(titleCursorOnExit, iExit);
+	Object_add_component(titleMaster, titleCursorOnPlay);
+	Object_add_component(titleMaster, titleCursorOnLB);
+	Object_add_component(titleMaster, titleCursorOnExit);
+
+	Object_set_valid(titleCursorOnPlay);
+	Object_set_invalid(titleCursorOnLB);
+	Object_set_invalid(titleCursorOnExit);
+
+	aMoveCursor = Audio_new(4);
+	aYES = Audio_new(12);
+
+	Audio_load(aMoveCursor,"resource/audio/select.wav");
+	Audio_load(aYES,"resource/audio/yg.wav");
+
+
+	/////////////////// leader board
+	//
+	//
+	
+	lbMaster = Object_new();
+
+	Image2D* ilbback;
+
+	Object* scoreArray[9];
+	ilbback = Image2D_new();
+	ilbback->p_transform->scale.x = 1;
+	ilbback->p_transform->position.x = 100;
+	ilbback->p_transform->scale.y = 1;
+	Object_add_component(lbMaster, ilbback);
+	Image2D_load(ilbback, "resource/iamge/scoreback.png");
+
+	char path[64];
+	for(int i = 0; i < 10; i++)
+	{
+		snprintf(path, 64, "resource/image/text/number/%d.png", i);
+		inum[i] = Image2D_new();
+		Image2D_load(inum[i], path);
+	}
+
+	for(int isa = 0; isa < 9; isa++)
+	{
+		scoreArray[isa] = Object_new();
+		scoreArray[isa]->transform->position.y = 200+isa * 50;
+		scoreArray[isa]->transform->position.x = 300;
+		Object_add_component(lbMaster, scoreArray[isa]);
+		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
+		{
+			lbdigiObj[isa][i] = Object_new();
+			lbdigiObj[isa][i]->transform->position.x = i*33;
+			lbdigiObj[isa][i]->transform->position.y = 5;
+			lbdigiObj[isa][i]->transform->scale.x = 0.13;
+			lbdigiObj[isa][i]->transform->scale.y = 0.15;
+			Object_add_component(scoreArray[isa], lbdigiObj[isa][i]);
+		}
+	}
+
+	int d;
+	int dd;
+	FILE* fp;
+	if((fp = fopen("scr","r")) == NULL)
+	{
+		DP("failed to open a score file\n");
+	}
+	else
+	{
+		for(int i = 0; i < 9; i++)
+		{
+			fscanf(fp, "%lld", lbscore+i);
+		}
+	}
+	fclose(fp);
+	
+	for(int is = 0; is < 9; is++)
+	{
+		DPIF(false, "%lld\n", lbscore[is]);
+		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
+		{
+			d = pow(10, i);
+			dd = pow(10, i+1);
+			Object_clear_component(lbdigiObj[is][SCORE_STRING_LENGTH-1-i]);
+			Object_add_component(lbdigiObj[is][SCORE_STRING_LENGTH-1-i], inum[(lbscore[is]%dd - lbscore[is]%d)/d]);
+		}
+	}
+
+
+	// game over
+	//
+	//
+	goMaster = Object_new();
+	Image2D* igo;
+
+	igo = Image2D_new();
+	igo->option = IMAGE2D_CENTER;
+	igo->p_transform->scale.x = 0.1;
+	igo->p_transform->scale.y = 0.1;
+	igo->p_transform->position.x = WINDOW_WIDTH/2.0;
+	igo->p_transform->position.y = WINDOW_HEIGHT/2.0;
+
+	Image2D_load(igo, "resource/image/text/gameover.png");
+	Object_add_component(goMaster, igo);
+
+}
+
+void updateTitle()
+{
+	static char selector = 0;
+	if(Keyboard_is_pressed('k'))//
+	{
+		selector--;
+		if(selector < 0)
+		{
+			selector = 2;
+		}
+		Audio_play(aMoveCursor);
+	}
+	else if(Keyboard_is_pressed('j'))//
+	{
+		selector++;
+		if(selector >= 3)
+		{
+			selector = 0;
+		}
+		Audio_play(aMoveCursor);
+	}
+	else if(Keyboard_is_pressed('h'))
+	{
+		Audio_play(aYES);
+		switch(selector)
+		{
+			case 0:
+				initAllAllAllAllAll();
+				scene = 1;
+				break;
+			case 1:
+				scene = 4;
+				break;
+			case 2:
+				Sleep(750);
+				exit(0);
+				
+				break;
+			default:
+				selector = selector % 3;
+		}
+	}
+
+	switch(selector)
+	{
+		case 0:
+			Object_set_valid(titleCursorOnPlay);
+			Object_set_invalid(titleCursorOnLB);
+			Object_set_invalid(titleCursorOnExit);
+			break;
+		case 1:
+			Object_set_invalid(titleCursorOnPlay);
+			Object_set_valid(titleCursorOnLB);
+			Object_set_invalid(titleCursorOnExit);
+			break;
+		case 2:
+			Object_set_invalid(titleCursorOnPlay);
+			Object_set_invalid(titleCursorOnLB);
+			Object_set_valid(titleCursorOnExit);
+			break;
+		default:
+			selector = selector % 3;
+	}
+	
+}
+
+void updateLb()
+{
+	int d;
+	int dd;
+	for(int is = 0; is < 9; is++)
+	{
+		for(int i = 0; i < SCORE_STRING_LENGTH; i++)
+		{
+			d = pow(10, i);
+			dd = pow(10, i+1);
+			Object_clear_component(lbdigiObj[is][SCORE_STRING_LENGTH-1-i]);
+			Object_add_component(lbdigiObj[is][SCORE_STRING_LENGTH-1-i], inum[(lbscore[is]%dd - lbscore[is]%d)/d]);
+		}
+	}
+	if(Keyboard_is_pressed('h'))
+	{
+		Audio_play(aYES);
+		scene = 2;
+	}
+}
+
+void updateGo()
+{
+	if(Keyboard_is_pressed('h'))
+	{
+		Audio_play(aYES);
+		scene = 4;
+	}
+}
+
+void initAllAllAllAllAll()
+{
+	score = 0;
+	stage0v = false;
+	enemyWave0 = false;
+	enemyWave1 = false;
+	enemyFollow0 = false;
+	enemyFollow1 = false;
+	enemyWave2 = false;
+	enemyWave3 = false;
+	enemyFollow2 = false;
+	enemyWave4 = false;
+	Object_set_invalid(stage0);
+	for(int i = 0; i < ENEMY_BULLET0_DEFAULT_NUM; i++)
+	{
+		Object_set_invalid(enemyBullet0.object[i]);
+		enemyBullet0.collider[i]->isValid = false;
+		enemyBullet0.object[i]->transform->position.x = -1000;
+		Timer_reset_count(enemyBullet0.timer[i]);
+	}
+	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
+	{
+		Object_set_invalid(enemyCharacter0.object[i]);
+		enemyCharacter0.collider[i]->isValid = false;
+		enemyCharacter0.object[i]->transform->position.x = -1000;
+		enemyCharacter2.speed[i] = ENEMY_CHARACTER2_DEFAULT_SPEED;
+	}
+	for(int i = 0; i < ENEMY_CHARACTER1_DEFAULT_NUM; i++)
+	{
+		Object_set_invalid(enemyCharacter1.object[i]);
+		enemyCharacter1.collider[i]->isValid = false;
+		enemyCharacter1.object[i]->transform->position.x = -1000;
+	}
+	for(int i = 0; i < ENEMY_CHARACTER2_DEFAULT_NUM; i++)
+	{
+		Object_set_invalid(enemyCharacter2.object[i]);
+		enemyCharacter2.collider[i]->isValid = false;
+		enemyCharacter2.collidert[i]->isValid = false;
+		enemyCharacter2.object[i]->transform->position.x = -1000;
+	}
+	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM_LIMIT; i++)
+	{
+		Object_set_invalid(playerBullet0.object[i]);
+		playerBullet0.collider[i]->isValid = false;
+		playerBullet0.object[i]->transform->scale.y = 0.5;
+	}
+	for(int i = 0; i < POWERUPCORE_DEFAULT_NUM; i++)
+	{
+		Object_set_invalid(powerupCore.object[i]);
+		powerupCore.collider[i]->isValid = false;
+		powerupCore.object[i]->transform->position.x = -1000;
+	}
+
+	sphinxNow = false;
+	currentLap = 1;
+
+	Object_set_invalid(stage0);
+	stage0->transform->position.x = 0;
+	sphinx.childObject->transform->position.x = WINDOW_WIDTH + stage0_moving_speed * timeSphinxApper; // 60s
+	Animation2D_play(bossReset);
+	Animation2D_reset(bossStandUpAnim);
+	Object_set_valid(sphinx.masterObject);
+
+	Animation2D_reset(wave0childAnimation);
+	Animation2D_reset(wave0animation);
+
+	Animation2D_reset(wave1childAnimation);
+	Animation2D_reset(wave1animation);
+
+	Animation2D_reset(wave2childAnimation);
+	Animation2D_reset(wave2animation);
+
+	Animation2D_reset(wave3childAnimation);
+	Animation2D_reset(wave3animation);
+
+	Animation2D_reset(wave4childAnimation);
+	Animation2D_reset(wave4animation);
+
+	pbDouble = 0;
+	powerupSelecter = 0;
+	enemyBullet0.speed = ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED;
+
+	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
+	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
+
+	playerCharacter.object->transform->position.x = 300;
+	playerCharacter.object->transform->position.y = 300;
+
+	back1->transform->position.x = 0;
+	back2->transform->position.x = 0;
+	back3->transform->position.x = 0;
+
+	resetTimer();
+}
+// }}}
+
 
 // vim:set foldmethod=marker:

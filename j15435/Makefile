@@ -52,13 +52,13 @@ LINK    = $(LD) $^ -o $@ $(LDFLAGS)
 
 .PHONY: all debug release clean depend
 
-debug  : CCFLAGS += $(DEBUG_FLAGS)
-debug  : LDFLAGS += $(DEBUG_FLAGS)
-debug  : all
-
 release: CCFLAGS += $(RELEASE_FLAGS)
 release: LDFLAGS += $(RELEASE_FLAGS)
 release: all
+
+debug  : CCFLAGS += $(DEBUG_FLAGS)
+debug  : LDFLAGS += $(DEBUG_FLAGS)
+debug  : all
 
 all: $(TARGET)
 
