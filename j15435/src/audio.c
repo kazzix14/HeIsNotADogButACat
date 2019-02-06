@@ -119,7 +119,7 @@ static void* load(void* path)
 
 static void* play()
 {
-	while(1)
+	while(1 == 1)
 	{
 		pthread_mutex_lock(&mutex_cond_audio_play);
 		pthread_cond_wait(&cond_audio_play, &mutex_cond_audio_play);

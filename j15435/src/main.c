@@ -1170,11 +1170,11 @@ void initSphinx()
 	Image2D_load(iey, "resource/image/enemy/boss/eye.png");
 	Image2D_load(ilz, "resource/image/enemy/boss/lazer.png");
 
-	//Audio_load(aPunch, "resource/audio/enemy/boss/0.wav");
-	//Audio_load(aMao, "resource/audio/enemy/boss/0.wav");
-	//Audio_load(aLazer, "resource/audio/enemy/boss/0.wav");
-	//Audio_load(aGass, "resource/audio/enemy/boss/0.wav");
-	//Audio_load(aBump, "resource/audio/enemy/boss/0.wav");
+	Audio_load(sphinx.aMao, "resource/audio/sphinx/mew1.wav"); // bye
+	Audio_load(sphinx.aPunch, "resource/audio/sphinx/mew2.wav"); // punch
+	Audio_load(sphinx.aLazer, "resource/audio/sphinx/prelazer.wav"); // lazer
+	Audio_load(sphinx.aGass, "resource/audio/sphinx/mew3.wav");  // jaw
+	Audio_load(sphinx.aBump, "resource/audio/sphinx/mew4.wav"); // sweep
 	
 	sphinx.bdcol = Collider2D_new();
 	sphinx.ulcol = Collider2D_new();
@@ -1407,7 +1407,7 @@ void initSphinx()
 	Object_set_invalid(sphinx.lazer);
 
 	sphinx.childObject->transform->position.x = stage0ground0Offset + 850 + stage0_moving_speed * timeSphinxApper; // 60s
-	DPIF(true, "sphinx child obj x : %f\n",sphinx.childObject->transform->position.x);
+	DPIF(false, "sphinx child obj x : %f\n",sphinx.childObject->transform->position.x);
 	sphinx.childObject->transform->position.y = WINDOW_HEIGHT - 50;
 
 	//Object_add_component(stage0, sphinx.masterObject);
@@ -2040,11 +2040,13 @@ void moveSphinx()
 				switch(rand() % 4)
 				{
 					case 0:
+						Audio_play(sphinx.aPunch);
 						Animation2D_reset(bossPunch);
 						Timer_reset_count(sphinx.timer);
 						punch = true;
 						break;
 					case 1:
+						Audio_play(sphinx.aLazer);
 						Animation2D_reset(bossHead);
 						Object_set_valid(preblack);
 						Object_set_valid(prewhite);
@@ -2055,12 +2057,14 @@ void moveSphinx()
 						break;
 					
 					case 2:
+						Audio_play(sphinx.aGass);
 						Animation2D_reset(bossJaw);
 						Timer_reset_count(sphinx.timer);
 						child = true;
 						go = true;
 						break;
 					case 3:
+						Audio_play(sphinx.aBump);
 						Animation2D_reset(bossSweep);
 						Timer_reset_count(sphinx.timer);
 						sweep = true;
@@ -2107,10 +2111,10 @@ void moveSphinx()
 			Object_set_invalid(sphinx.lazer);
 			//Object_set_invalid(sphinx.masterObject);
 			sphinxNow = false;
-			setSphinxColInvalid();
 			//sphinx.hp2 = SPHINX_DEFAULT_HP2;
 		if(sphinx.hp2 > 0)
 		{
+			setSphinxColInvalid();
 			hp20 = false;
 			hp10 = false;
 		}
