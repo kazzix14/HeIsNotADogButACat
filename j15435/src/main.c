@@ -1848,7 +1848,6 @@ void moveSphinx()
 	static bool go = false;
 
 	Vector2D v;
-	
 	if(sphinx.childObject->transform->position.x < 850 && hp20 == false)
 	{
 		if(sphinxNow == false)
@@ -2117,6 +2116,16 @@ void moveSphinx()
 			setSphinxColInvalid();
 			hp20 = false;
 			hp10 = false;
+		}
+		if(sphinx.hp2 > 0)
+		{
+			if(sphinx.hp1 > 0)
+			{
+				if(sphinx.childObject->transform->position.x > 2000)
+				{
+					Animation2D_play(bossReset);
+				}
+			}
 		}
 	}
 
@@ -3280,7 +3289,6 @@ void moveDestroyEffect()
  // // // // // // // // // // // // // // // // // // // // // // // // // // //
 // // // // // // // // // // // // // // // // // // // // // // // // // // // 
 
-
 // stage 0 init
 // {{{
 
@@ -3626,7 +3634,7 @@ void stage0_update()
 
 	// wave 0 
 	if(enemyWave0 == false && st > enemyWave0start && st < enemyWave0start + enemyWave0length) {addEnemyCharacter0(&v, 0, 6); enemyWave0 = true;}		
-	if(st > enemyWave0start + enemyWave0length){Animation2D_play(bossReset);enemyWave0 = false;Animation2D_reset(wave0animation);Animation2D_reset(wave0childAnimation);}
+	if(st > enemyWave0start + enemyWave0length){enemyWave0 = false;Animation2D_reset(wave0animation);Animation2D_reset(wave0childAnimation);}
 
 	// wave 1 
 	if(enemyWave1 == false && st > enemyWave1start && st < enemyWave1start + enemyWave1length) {addEnemyCharacter0(&v, 6, 12); enemyWave1 = true;}		
