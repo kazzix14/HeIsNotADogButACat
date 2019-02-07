@@ -1,4 +1,4 @@
-Handwritten Clock
+He Is Not a Dog But a Cat
 version 0.0.1   12/25/2018
 (C) 2018 Kazuma Murata 
 
