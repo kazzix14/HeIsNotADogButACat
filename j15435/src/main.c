@@ -4549,6 +4549,8 @@ void initAllAllAllAllAll()
 	pbDouble = 0;
 	powerupSelecter = 0;
 	enemyBullet0.speed = ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED;
+	enemyCharacter1.speed = ENEMY_CHARACTER1_DEFAULT_SPEED;
+	
 
 	sphinx.hp1 = SPHINX_DEFAULT_HP1;
 	sphinx.hp2 = SPHINX_DEFAULT_HP1;
