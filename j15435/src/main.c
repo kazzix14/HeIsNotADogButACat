@@ -1176,41 +1176,46 @@ void movePlayerCharacter()
 				{
 					scene = 3;
 
-
-					int isu = -1;
-					for(int i = 0;i < 9; i++)
-					{
-						if(score > lbscore[i] && isu == -1)
+						int isu = -1;
+						for(int i = 0;i < 9; i++)
 						{
-							isu = i;
+							if(score > lbscore[i] && isu == -1)
+							{
+								isu = i;
+								printf("h\n");
+							}
 						}
-					}
 
-					if(isu != -1)
-					{
-						for(int i = 9-1; i > 0; i--)
+						if(isu != -1)
 						{
-							if(i == isu)
+								printf("h %d\n", isu);
+							for(int i = 9-1; i > 0; i--)
+							{
+								if(i == isu)
+								{
+									lbscore[isu] = score;
+									break;
+								}
+								lbscore[i] = lbscore[i-1];
+							}
+							if(isu == 0)
 							{
 								lbscore[isu] = score;
-								break;
 							}
-							lbscore[i] = lbscore[i-1];
-						}
-						FILE *fp;
-						if((fp = fopen("scr","w")) == NULL)
-						{
-							DP("failed to open a score file\n");
-						}
-						else
-						{
-							for(int i = 0; i < 9; i++)
+							FILE *fp;
+							if((fp = fopen("scr","w")) == NULL)
 							{
-								fprintf(fp, "%lld\n", lbscore[i]);
+								DP("failed to open a score file\n");
 							}
+							else
+							{
+								for(int i = 0; i < 9; i++)
+								{
+									fprintf(fp, "%lld\n", lbscore[i]);
+								}
+							}
+							fclose(fp);
 						}
-						fclose(fp);
-					}
 
 
 
@@ -4544,6 +4549,9 @@ void initAllAllAllAllAll()
 	pbDouble = 0;
 	powerupSelecter = 0;
 	enemyBullet0.speed = ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED;
+
+	sphinx.hp1 = SPHINX_DEFAULT_HP1;
+	sphinx.hp2 = SPHINX_DEFAULT_HP1;
 
 	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
