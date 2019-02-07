@@ -2073,6 +2073,8 @@ void initSphinx()
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.jaw->transform->rotation), &(sphinx.jaw->transform->rotation), sizeof(Vector4D), ANIMATION_NO_SMOOTHING);
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.childObject->transform->scale), &(sphinx.childObject->transform->scale), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.headp->transform->position), &(sphinx.headp->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.uarm->transform->scale), &(sphinx.uarm->transform->scale), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
+	Animation2D_add_animated_variable(bossReset, 0, &(sphinx.larm->transform->position), &(sphinx.larm->transform->position), sizeof(Vector2D), ANIMATION_NO_SMOOTHING);
 
 
 }
@@ -4481,6 +4483,8 @@ void initAllAllAllAllAll()
 		Object_set_invalid(enemyBullet0.object[i]);
 		enemyBullet0.collider[i]->isValid = false;
 		enemyBullet0.object[i]->transform->position.x = -1000;
+		enemyBullet0.object[i]->transform->scale.x = 1;
+		enemyBullet0.object[i]->transform->scale.y = 1;
 		Timer_reset_count(enemyBullet0.timer[i]);
 	}
 	for(int i = 0; i < ENEMY_CHARACTER0_DEFAULT_NUM; i++)
@@ -4502,6 +4506,7 @@ void initAllAllAllAllAll()
 		enemyCharacter2.collider[i]->isValid = false;
 		enemyCharacter2.collidert[i]->isValid = false;
 		enemyCharacter2.object[i]->transform->position.x = -1000;
+		enemyCharacter2.speed[i] = ENEMY_CHARACTER2_DEFAULT_SPEED;
 	}
 	for(int i = 0; i < PLAYER_CHARACTER_BULLET_NUM_LIMIT; i++)
 	{
@@ -4544,6 +4549,30 @@ void initAllAllAllAllAll()
 	pbDouble = 0;
 	powerupSelecter = 0;
 	enemyBullet0.speed = ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED;
+	enc0shotChance = 250;
+	enc1shotChance = 20;
+	enc2shotChance = 70;
+	sphinxShotChance = 100;
+	sphinxLazerInterval = 0.6;
+	numDestroy = 0;
+	totaltime = 0;
+
+	playerBullet0.speed = PLAYER_CHARACTER_BULLET_DEFAULT_SPEED;
+	playerBullet0.interval = PLAYER_CHARACTER_BULLET_DEFAULT_INTERVAL;
+	playerBullet0.bulletNum = PLAYER_CHARACTER_DEFAULT_BULLET_NUM;
+	enemyCharacter0.speed = ENEMY_CHARACTER0_DEFAULT_SPEED;
+	enemyCharacter0.interval = ENEMY_CHARACTER0_DEFAULT_INTERVAL;
+	enemyCharacter0.acceleration = ENEMY_CHARACTER0_DEFAULT_ACCELERATION;
+
+	enemyCharacter1.speed = ENEMY_CHARACTER1_DEFAULT_SPEED;
+	enemyCharacter1.acceleration = ENEMY_CHARACTER1_DEFAULT_ACCELERATION;
+	enemyCharacter1.interval = ENEMY_CHARACTER1_DEFAULT_INTERVAL;
+
+	enemyCharacter2.interval = ENEMY_CHARACTER2_DEFAULT_INTERVAL;
+	enemyCharacter2.acceleration = ENEMY_CHARACTER2_DEFAULT_ACCELERATION;
+
+	enemyBullet0.speed = ENEMY_CHARACTER_BULLET0_DEFAULT_SPEED;
+
 
 	playerCharacter.hp = PLAYER_CHARACTER_DEFAULT_HP;
 	playerCharacter.speed = PLAYER_CHARACTER_DEFAULT_SPEED;
