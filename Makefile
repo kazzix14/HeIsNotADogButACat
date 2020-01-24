@@ -9,7 +9,7 @@ ICONIMGDIR := resource/image
 INCDIR     := /usr/include/opengl ./include
 DEPENDDIR  := depend
 
-TARGET     := j15435.exe
+TARGET     := game.exe
 SRCS       := $(wildcard $(SRCDIR)/*.c)
 HEADERS    := $(wildcard $(HEADERDIR)/*.h)
 OBJS       := $(subst $(SRCDIR)/, $(OBJDIR)/, $(SRCS:%.c=%.o))
